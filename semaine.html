@@ -5,18 +5,670 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Cahier journal — Planificateur Maternelle</title>
   <style>
+    /* Reset et base */
     * { box-sizing: border-box; margin: 0; padding: 0; }
+
     body {
       font-family: system-ui, sans-serif;
       background: #f5f5f0;
-      padding: 2rem;
+      padding: 1.5rem;
+      color: #1a1a1a;
     }
-    h1 { color: #2d6a4f; margin-bottom: 1rem; }
-    p { color: #666; }
+
+    /* En-tête de page */
+    .page-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+    }
+
+    .page-header h1 {
+      font-size: 1.1rem;
+      font-weight: 500;
+      color: #2d6a4f;
+    }
+
+    .page-header p {
+      font-size: 0.8rem;
+      color: #888;
+      margin-top: 2px;
+    }
+
+    .btn-retour {
+      font-size: 0.85rem;
+      color: #2d6a4f;
+      text-decoration: none;
+      border: 1px solid #2d6a4f;
+      padding: 6px 14px;
+      border-radius: 8px;
+    }
+
+    /* Conteneur principal */
+    .semaine-wrapper {
+      background: white;
+      border-radius: 12px;
+      border: 1px solid #e5e5e0;
+      overflow: hidden;
+    }
+
+    /* En-tête du tableau */
+    .semaine-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid #e5e5e0;
+      background: #fafaf8;
+    }
+
+    .semaine-titre h2 {
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: #1a1a1a;
+    }
+
+    .semaine-titre p {
+      font-size: 0.75rem;
+      color: #888;
+      margin-top: 2px;
+    }
+
+    /* Bascule matin / après-midi */
+    .toggle-group {
+      display: flex;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .toggle-btn {
+      padding: 6px 16px;
+      font-size: 0.8rem;
+      border: none;
+      cursor: pointer;
+      background: transparent;
+      color: #888;
+      transition: background 0.15s;
+    }
+
+    .toggle-btn.actif {
+      background: #e8f4ee;
+      color: #2d6a4f;
+      font-weight: 500;
+    }
+
+    /* Grille principale */
+    .grille {
+      display: grid;
+      grid-template-columns: 110px repeat(3, 1fr);
+    }
+
+    /* En-têtes colonnes */
+    .col-header {
+      padding: 8px 12px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: #666;
+      background: #f5f5f0;
+      border-right: 1px solid #e5e5e0;
+      border-bottom: 1px solid #ccc;
+      text-align: center;
+    }
+
+    .col-header:last-child { border-right: none; }
+    .col-header.col-horaire { text-align: left; }
+
+    /* Colonne horaire + moment */
+    .cellule-horaire {
+      padding: 8px 10px;
+      background: #f5f5f0;
+      border-right: 1px solid #e5e5e0;
+      border-bottom: 1px solid #e5e5e0;
+    }
+
+    .horaire-time {
+      font-size: 0.68rem;
+      color: #aaa;
+      white-space: nowrap;
+    }
+
+    .horaire-moment {
+      font-size: 0.7rem;
+      font-weight: 500;
+      color: #666;
+      margin-top: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      line-height: 1.3;
+    }
+
+    /* Cellule de contenu */
+    .cellule {
+      padding: 8px 10px;
+      border-right: 1px solid #e5e5e0;
+      border-bottom: 1px solid #e5e5e0;
+      min-height: 64px;
+    }
+
+    .cellule:last-child { border-right: none; }
+
+    /* Cellule pleine largeur (accueil, rituels communs, récré) */
+    .cellule-pleine {
+      grid-column: 2 / -1;
+      background: #f9f9f7;
+    }
+
+    /* Fond ateliers */
+    .cellule-ateliers { background: #f0f7eb; }
+
+    /* Groupe d'entrées dans une cellule */
+    .groupe { display: flex; flex-direction: column; gap: 6px; }
+
+    /* Séparateur PS / GS */
+    .separateur {
+      border: none;
+      border-top: 1px dashed #ddd;
+      margin: 2px 0;
+    }
+
+    /* Une entrée = badge(s) + activité + programme */
+    .entree { display: flex; flex-direction: column; gap: 2px; }
+
+    .entree-top {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+
+    /* Badges */
+    .badge {
+      font-size: 0.65rem;
+      font-weight: 500;
+      padding: 1px 6px;
+      border-radius: 4px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .badge-ps { background: #fff3cd; color: #856404; }
+    .badge-gs { background: #dbeafe; color: #1e40af; }
+
+    .badge-role {
+      background: #f0f0ee;
+      color: #888;
+      border: 1px solid #e0e0dc;
+    }
+
+    /* Texte activité */
+    .activite {
+      font-size: 0.75rem;
+      color: #1a1a1a;
+      line-height: 1.3;
+    }
+
+    /* Lien programme */
+    .programme {
+      font-size: 0.65rem;
+      color: #aaa;
+      padding-left: 2px;
+      line-height: 1.3;
+    }
+
+    /* Vue après-midi cachée par défaut */
+    .vue-matin { display: contents; }
+    .vue-aprem { display: none; }
+
+    /* Impression */
+    @media print {
+      body { background: white; padding: 0; }
+      .btn-retour { display: none; }
+      .toggle-group { display: none; }
+      .semaine-wrapper { border: none; border-radius: 0; }
+    }
   </style>
 </head>
 <body>
-  <h1>🍀 Cahier journal</h1>
-  <p>Page en construction.</p>
+
+<div class="page-header">
+  <div>
+    <h1>🍀 Cahier journal</h1>
+    <p>Année 2026-2027 — Période 5</p>
+  </div>
+  <a href="index.html" class="btn-retour">← Retour</a>
+</div>
+
+<div class="semaine-wrapper">
+
+  <!-- En-tête -->
+  <div class="semaine-header">
+    <div class="semaine-titre">
+      <h2>Semaine du 21 au 25 avril 2025</h2>
+      <p>Période 5 — 3 jours de classe · Mardi / Jeudi / Vendredi</p>
+    </div>
+    <div class="toggle-group">
+      <button class="toggle-btn actif" onclick="basculerVue('matin', this)">Matin</button>
+      <button class="toggle-btn" onclick="basculerVue('aprem', this)">Après-midi</button>
+    </div>
+  </div>
+
+  <!-- Grille -->
+  <div class="grille" id="grille">
+
+    <!-- En-têtes colonnes -->
+    <div class="col-header col-horaire"></div>
+    <div class="col-header">Mardi 21</div>
+    <div class="col-header">Jeudi 23</div>
+    <div class="col-header">Vendredi 24</div>
+
+    <!-- ===================== VUE MATIN ===================== -->
+    <div class="vue-matin">
+
+      <!-- Accueil -->
+      <div class="cellule-horaire">
+        <div class="horaire-time">8h20 – 8h35</div>
+        <div class="horaire-moment">Accueil</div>
+      </div>
+      <div class="cellule cellule-pleine">
+        <div class="groupe">
+          <div class="entree">
+            <div class="entree-top">
+              <span class="badge badge-ps">PS</span>
+              <span class="activite">Étiquette prénom + bonhomme</span>
+            </div>
+            <div class="programme">► Découvrir la fonction de l'écrit · dénombrer de petites quantités</div>
+          </div>
+          <div class="entree">
+            <div class="entree-top">
+              <span class="badge badge-gs">GS</span>
+              <span class="activite">Étiquette prénom + boite œufs + date par les responsables</span>
+            </div>
+            <div class="programme">► Le nombre comme position · construire la notion de dizaine</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rituels -->
+      <div class="cellule-horaire">
+        <div class="horaire-time">8h35 – 8h40</div>
+        <div class="horaire-moment">Rituels</div>
+      </div>
+      <div class="cellule cellule-pleine">
+        <div class="groupe">
+          <div class="entree">
+            <div class="entree-top">
+              <span class="badge badge-ps">PS</span>
+              <span class="activite">Appel — mini-monstre des absents – nom du jour</span>
+            </div>
+            <div class="programme">► Introduire des repères sociaux · réaliser de petites collections</div>
+          </div>
+          <div class="entree">
+            <div class="entree-top">
+              <span class="badge badge-gs">GS</span>
+              <span class="activite">Lecture et vérification de la date · lecture du calendrier</span>
+            </div>
+            <div class="programme">► Se repérer dans le temps</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rituels maths — 3 colonnes distinctes -->
+      <div class="cellule-horaire">
+        <div class="horaire-time">8h40 – 8h50</div>
+        <div class="horaire-moment">Rituels maths</div>
+      </div>
+      <div class="cellule">
+        <div class="groupe">
+          <div class="entree">
+            <div class="entree-top"><span class="badge badge-ps">PS</span><span class="activite">Rituel des personnages · mini-monstre des absents</span></div>
+            <div class="programme">► Réaliser / quantifier une collection</div>
+          </div>
+          <hr class="separateur">
+          <div class="entree">
+            <div class="entree-top"><span class="badge badge-gs">GS</span><span class="activite">Cartes flash + boîte d'œufs</span></div>
+            <div class="programme">► Identifier et quantifier rapidement</div>
+          </div>
+        </div>
+      </div>
+      <div class="cellule">
+        <div class="groupe">
+          <div class="entree">
+            <div class="entree-top"><span class="badge badge-ps">PS</span><span class="activite">Comptine : mini-monstre deviendra grand</span></div>
+            <div class="programme">► Mémoriser des comptines</div>
+          </div>
+          <hr class="separateur">
+          <div class="entree">
+            <div class="entree-top"><span class="badge badge-gs">GS</span><span class="activite">Rappel boulier — lien boîte d'œufs</span></div>
+            <div class="programme">► Composer-décomposer jusqu'à 10</div>
+          </div>
+        </div>
+      </div>
+      <div class="cellule">
+        <div class="groupe">
+          <div class="entree">
+            <div class="entree-top"><span class="badge badge-ps">PS</span><span class="activite">Cartes flash 1–5</span></div>
+            <div class="programme">► Identifier les représentations des premiers nombres</div>
+          </div>
+          <hr class="separateur">
+          <div class="entree">
+            <div class="entree-top"><span class="badge badge-gs">GS</span><span class="activite">Cartes flash 1–10 + boulier + comptine à rebours</span></div>
+            <div class="programme">► Mobiliser décompositions de 10</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ateliers -->
+      <div class="cellule-horaire">
+        <div class="horaire-time">8h50 – 10h</div>
+        <div class="horaire-moment">Ateliers ×2</div>
+      </div>
+      <div class="cellule cellule-ateliers">
+        <div class="groupe">
+          <div class="entree">
+            <div class="entree-top"><span class="badge badge-ps">PS</span><span class="badge badge-role">ATSEM</span><span class="activite">Tamponnage fond de mare</span></div>
+            <div class="programme">► Activités artistiques · motricité fine</div>
+          </div>
+          <div class="entree">
+            <div class="entree-top"><span class="badge badge-ps">PS</span><span class="badge badge-role">AUTO</span><span class="activite">Colorier la grenouille</span></div>
+            <div class="programme">► Motricité fine · activités artistiques</div>
+          </div>
+          <hr class="separateur">
+          <div class="entree">
+            <div class="entree-top"><span class="badge badge-gs">GS</span><span class="badge badge-role">ENS</span><span class="activite">Compléments à 10 — affichage</span></div>
+            <div class="programme">► Décomposer 10 · institutionnalisation</div>
+          </div>
+          <div class="entree">
+            <div class="entree-top"><span class="badge badge-gs">GS</span><span class="badge badge-role">AUTO</span><span class="activite">Dessin guidé : grenouille</span></div>
+            <div class="programme">► Activités artistiques · reproduire un modèle</div>
+          </div>
+        </div>
+      </div>
+      <div class="cellule cellule-ateliers">
+        <div class="groupe">
+          <div class="entree">
+            <div class="entree-top"><span class="badge badge-ps">PS</span><span class="badge badge-role">ENS</span><span class="activite">Croque le 3, 4, 5</span></div>
+            <div class="programme">► Constituer une collection — cardinal 3 à 5</div>
+          </div>
+          <div class="entree">
+            <div class="entree-top"><span class="badge badge-ps">PS</span><span class="badge badge-role">AUTO</span><span class="activite">Déchirer les papiers de soie</span></div>
+            <div class="programme">► Motricité fine · déchirer</div>
+          </div>
+          <hr class="separateur">
+          <div class="entree">
+            <div class="entree-top"><span class="badge badge-gs">GS</span><span class="badge badge-role">ATSEM</span><span class="activite">Spirales à l'encre</span></div>
+            <div class="programme">► Geste graphique · activités artistiques</div>
+          </div>
+          <div class="entree">
+            <div class="entree-top"><span class="badge badge-gs">GS</span><span class="badge badge-role">AUTO</span><span class="activite">Découpage nénuphars</span></div>
+            <div class="programme">► Formes planes · agir avec les outils</div>
+          </div>
+        </div>
+      </div>
+      <div class="cellule cellule-ateliers">
+        <div class="groupe">
+          <div class="entree">
+            <div class="entree-top"><span class="badge badge-ps">PS</span><span class="badge badge-role">ATSEM</span><span class="activite">Gommettes géométriques «fleur»</span></div>
+            <div class="programme">► Reconnaître et nommer les formes planes</div>
+          </div>
+          <div class="entree">
+            <div class="entree-top"><span class="badge badge-ps">PS</span><span class="badge badge-role">AUTO</span><span class="activite">Coller le papier de soie sur la fleur</span></div>
+            <div class="programme">► Motricité fine · coller</div>
+          </div>
+          <hr class="separateur">
+          <div class="entree">
+            <div class="entree-top"><span class="badge badge-gs">GS</span><span class="badge badge-role">ENS</span><span class="activite">Compléments à 10 — pirates</span></div>
+            <div class="programme">► Parties-tout · décomposer 10</div>
+          </div>
+          <div class="entree">
+            <div class="entree-top"><span class="badge badge-gs">GS</span><span class="badge badge-role">AUTO</span><span class="activite">Jeu de l'omelette MHM</span></div>
+            <div class="programme">► Vers la dizaine · groupements</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Motricité -->
+      <div class="cellule-horaire">
+        <div class="horaire-time">10h – 10h30</div>
+        <div class="horaire-moment">Motricité</div>
+      </div>
+      <div class="cellule">
+        <div class="groupe">
+          <div class="entree">
+            <div class="entree-top"><span class="badge badge-ps">PS</span><span class="activite">Salle de motricité</span></div>
+            <div class="programme">► Collaborer, coopérer, s'opposer</div>
+          </div>
+          <hr class="separateur">
+          <div class="entree">
+            <div class="entree-top"><span class="badge badge-gs">GS</span><span class="activite">Résolution de problèmes</span></div>
+            <div class="programme">► Utiliser les nombres pour résoudre des problèmes</div>
+          </div>
+        </div>
+      </div>
+      <div class="cellule">
+        <div class="groupe">
+          <div class="entree">
+            <div class="entree-top"><span class="badge badge-ps">PS</span><span class="activite">Salle de motricité</span></div>
+            <div class="programme">► Collaborer, coopérer, s'opposer</div>
+          </div>
+          <hr class="separateur">
+          <div class="entree">
+            <div class="entree-top"><span class="badge badge-gs">GS</span><span class="activite">Résolution de problèmes</span></div>
+            <div class="programme">► Utiliser les nombres pour résoudre des problèmes</div>
+          </div>
+        </div>
+      </div>
+      <div class="cellule">
+        <div class="groupe">
+          <div class="entree">
+            <div class="entree-top"><span class="badge badge-ps">PS</span><span class="badge badge-gs">GS</span><span class="activite">Parcours thème «sauter»</span></div>
+            <div class="programme">► Adapter ses déplacements à des contraintes variées</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Récréation -->
+      <div class="cellule-horaire">
+        <div class="horaire-time">10h30 – 11h</div>
+        <div class="horaire-moment">Récréation</div>
+      </div>
+      <div class="cellule cellule-pleine" style="min-height: 32px;"></div>
+
+      <!-- Suite matin -->
+      <div class="cellule-horaire">
+        <div class="horaire-time">11h – 11h30</div>
+        <div class="horaire-moment">Motricité / Littérature</div>
+      </div>
+      <div class="cellule">
+        <div class="groupe">
+          <div class="entree">
+            <div class="entree-top"><span class="badge badge-ps">PS</span><span class="activite">Narramus «Un peu perdu»</span></div>
+            <div class="programme">► Comprendre une histoire entendue</div>
+          </div>
+          <hr class="separateur">
+          <div class="entree">
+            <div class="entree-top"><span class="badge badge-gs">GS</span><span class="activite">Suite sauter loin</span></div>
+            <div class="programme">► Réaliser une performance mesurable</div>
+          </div>
+        </div>
+      </div>
+      <div class="cellule">
+        <div class="groupe">
+          <div class="entree">
+            <div class="entree-top"><span class="badge badge-ps">PS</span><span class="activite">Narramus «Un peu perdu»</span></div>
+            <div class="programme">► Comprendre une histoire entendue</div>
+          </div>
+          <hr class="separateur">
+          <div class="entree">
+            <div class="entree-top"><span class="badge badge-gs">GS</span><span class="activite">Suite sauter loin</span></div>
+            <div class="programme">► Réaliser une performance mesurable</div>
+          </div>
+        </div>
+      </div>
+      <div class="cellule">
+        <div class="groupe">
+          <div class="entree">
+            <div class="entree-top"><span class="badge badge-ps">PS</span><span class="badge badge-gs">GS</span><span class="activite">Lecture offerte — Pauvre verdurette</span></div>
+            <div class="programme">► Écouter et comprendre · enrichissement lexical</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <!-- ===================== FIN VUE MATIN ===================== -->
+
+    <!-- ===================== VUE APRÈS-MIDI ===================== -->
+    <div class="vue-aprem">
+
+      <div class="cellule-horaire">
+        <div class="horaire-time">13h20 – 13h30</div>
+        <div class="horaire-moment">Accueil</div>
+      </div>
+      <div class="cellule cellule-pleine">
+        <div class="groupe">
+          <div class="entree">
+            <div class="entree-top"><span class="badge badge-gs">GS</span><span class="activite">Accueil dans la cour</span></div>
+          </div>
+          <div class="entree">
+            <div class="entree-top"><span class="badge badge-ps">PS</span><span class="activite">Sieste jusqu'à 14h30</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cellule-horaire">
+        <div class="horaire-time">13h30 – 14h</div>
+        <div class="horaire-moment">Phonologie</div>
+      </div>
+      <div class="cellule">
+        <div class="entree">
+          <div class="entree-top"><span class="badge badge-gs">GS</span><span class="activite">Quelle attaque ! (en groupe)</span></div>
+          <div class="programme">► Identifier l'attaque d'un mot</div>
+        </div>
+      </div>
+      <div class="cellule">
+        <div class="entree">
+          <div class="entree-top"><span class="badge badge-gs">GS</span><span class="activite">L'attaque du château (en atelier)</span></div>
+          <div class="programme">► Identifier l'attaque d'un mot</div>
+        </div>
+      </div>
+      <div class="cellule">
+        <div class="entree">
+          <div class="entree-top"><span class="badge badge-gs">GS</span><span class="activite">L'attaque du château (en atelier)</span></div>
+          <div class="programme">► Identifier l'attaque d'un mot</div>
+        </div>
+      </div>
+
+      <div class="cellule-horaire">
+        <div class="horaire-time">14h – 14h30</div>
+        <div class="horaire-moment">Maths</div>
+      </div>
+      <div class="cellule">
+        <div class="entree">
+          <div class="entree-top"><span class="badge badge-gs">GS</span><span class="activite">Jeu de l'omelette (en atelier)</span></div>
+          <div class="programme">► Construire la notion de dizaine</div>
+        </div>
+      </div>
+      <div class="cellule">
+        <div class="entree">
+          <div class="entree-top"><span class="badge badge-gs">GS</span><span class="activite">Jeu de l'omelette (en atelier)</span></div>
+          <div class="programme">► Construire la notion de dizaine</div>
+        </div>
+      </div>
+      <div class="cellule">
+        <div class="entree">
+          <div class="entree-top"><span class="badge badge-gs">GS</span><span class="activite">La fleur du 10 — manipulation + monnaie</span></div>
+          <div class="programme">► Décomposer 10</div>
+        </div>
+      </div>
+
+      <div class="cellule-horaire">
+        <div class="horaire-time">14h30 – 15h</div>
+        <div class="horaire-moment">Réveil PS</div>
+      </div>
+      <div class="cellule cellule-pleine">
+        <div class="entree">
+          <div class="entree-top"><span class="badge badge-ps">PS</span><span class="activite">Village / ardoise des nombres — collections 3 à 5 — maison du nombre</span></div>
+          <div class="programme">► Lire l'écriture chiffrée · constituer une collection</div>
+        </div>
+      </div>
+
+      <div class="cellule-horaire">
+        <div class="horaire-time">15h – 15h30</div>
+        <div class="horaire-moment">Sciences</div>
+      </div>
+      <div class="cellule">
+        <div class="entree">
+          <div class="entree-top"><span class="badge badge-ps">PS</span><span class="badge badge-gs">GS</span><span class="activite">La mare — recueil des conceptions initiales</span></div>
+          <div class="programme">► Enrichir le vocabulaire · milieux de vie</div>
+        </div>
+      </div>
+      <div class="cellule">
+        <div class="entree">
+          <div class="entree-top"><span class="badge badge-ps">PS</span><span class="badge badge-gs">GS</span><span class="activite">La mare (suite) — livres documentaires</span></div>
+          <div class="programme">► Enrichir le vocabulaire · décrire</div>
+        </div>
+      </div>
+      <div class="cellule">
+        <div class="entree">
+          <div class="entree-top"><span class="badge badge-ps">PS</span><span class="badge badge-gs">GS</span><span class="activite">Lecture offerte — Pauvre verdurette</span></div>
+          <div class="programme">► Écouter et comprendre</div>
+        </div>
+      </div>
+
+      <div class="cellule-horaire">
+        <div class="horaire-time">15h30 – 16h</div>
+        <div class="horaire-moment">Récréation</div>
+      </div>
+      <div class="cellule cellule-pleine" style="min-height: 32px;"></div>
+
+      <div class="cellule-horaire">
+        <div class="horaire-time">16h – 16h30</div>
+        <div class="horaire-moment">Anglais / Arts</div>
+      </div>
+      <div class="cellule">
+        <div class="entree">
+          <div class="entree-top"><span class="badge badge-ps">PS</span><span class="badge badge-gs">GS</span><span class="activite">Découverte familles d'instruments</span></div>
+          <div class="programme">► Distinguer des sons · familles d'instruments</div>
+        </div>
+      </div>
+      <div class="cellule">
+        <div class="entree">
+          <div class="entree-top"><span class="badge badge-ps">PS</span><span class="badge badge-gs">GS</span><span class="activite">Activités artistiques — suite</span></div>
+          <div class="programme">► Distinguer des sons · familles d'instruments</div>
+        </div>
+      </div>
+      <div class="cellule">
+        <div class="entree">
+          <div class="entree-top"><span class="badge badge-ps">PS</span><span class="badge badge-gs">GS</span><span class="activite">Anglais — Animals · From head to toes</span></div>
+          <div class="programme">► S'éveiller à la diversité linguistique · mémoriser du vocabulaire</div>
+        </div>
+      </div>
+
+    </div>
+    <!-- ===================== FIN VUE APRÈS-MIDI ===================== -->
+
+  </div>
+</div>
+
+<script>
+  // Bascule matin / après-midi
+  function basculerVue(vue, btn) {
+    const matin = document.querySelector('.vue-matin');
+    const aprem = document.querySelector('.vue-aprem');
+    const btns = document.querySelectorAll('.toggle-btn');
+
+    btns.forEach(b => b.classList.remove('actif'));
+    btn.classList.add('actif');
+
+    if (vue === 'matin') {
+      matin.style.display = 'contents';
+      aprem.style.display = 'none';
+    } else {
+      matin.style.display = 'none';
+      aprem.style.display = 'contents';
+    }
+  }
+</script>
+
 </body>
 </html>

@@ -4,13 +4,14 @@
 // Body : { semaine_id: UUID }
 
 // Mapping fixe : jour de classe → numéro de jour MHM
-// Mardi = J2, Jeudi = J3, Vendredi = J4
-// J1 MHM n'est pas assigné automatiquement — listé dans rituels_semaine
 const JOUR_TO_MHM = {
   mardi:    2,
   jeudi:    3,
   vendredi: 4
 };
+
+// Moments en pleine largeur — insérés une seule fois sans jour
+const MOMENTS_PLEINS = ['Accueil', 'Récréation', 'Sieste PS', 'Réveil PS'];
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -33,25 +34,24 @@ export default async function handler(req, res) {
     'Prefer': 'return=minimal'
   };
 
-  // Objet créneau uniforme — toutes les clés présentes
   function makeCreneau(overrides) {
     return {
       semaine_id,
-      user_id: USER_ID,
-      jour: null,
-      heure_debut: null,
-      heure_fin: null,
-      moment: null,
-      type: 'variable',
-      titre_fixe: null,
-      niveau: null,
-      periode: null,
-      activite: null,
-      regle_id: null,
-      notes: null,
+      user_id:       USER_ID,
+      jour:          null,
+      heure_debut:   null,
+      heure_fin:     null,
+      moment:        null,
+      type:          'variable',
+      titre_fixe:    null,
+      niveau:        null,
+      periode:       null,
+      activite:      null,
+      regle_id:      null,
+      notes:         null,
       lien_programme: null,
-      role: null,
-      groupe: null,
+      role:          null,
+      groupe:        null,
       ...overrides
     };
   }
@@ -81,7 +81,7 @@ export default async function handler(req, res) {
     jours.push('jeudi');
     jours.push('vendredi');
 
-    // 4. Récupérer toutes les règles MHM pour cette période
+    // 4. Récupérer les règles MHM
     const resRegles = await fetch(
       `${SUPABASE_URL}/rest/v1/maternelle_regles?periode=eq.${numPeriode}&select=id,niveau,frequence_type,frequence_valeur,description,domaine_id,sous_domaine_id`,
       { headers }
@@ -105,21 +105,24 @@ export default async function handler(req, res) {
     );
     const template = await resTemplate.json();
 
-    // 7. Séparer les règles par type
+    // 7. Séparer les règles
     const reglesQuotidiennes = regles.filter(r => r.frequence_type === 'quotidien');
     const reglesHebdo        = regles.filter(r => r.frequence_type === 'hebdomadaire');
-
-    // Rituels J1 → liste de référence (non pré-placés)
-    const rituelsJ1 = reglesHebdo.filter(r => r.frequence_valeur === 1);
+    const rituelsJ1          = reglesHebdo.filter(r => r.frequence_valeur === 1);
 
     // 8. Générer les créneaux
     const creneauxAInserer = [];
 
-    // --- CRÉNEAUX FIXES : un par jour actif ---
-    for (const jour of jours) {
-      for (const tmpl of template) {
+    // --- CRÉNEAUX FIXES ---
+    // Pleine largeur (Accueil, Récréation, Sieste PS, Réveil PS) → une seule fois, jour = null
+    // Par jour (Rituels, Motricité) → une fois par jour actif
+    for (const tmpl of template) {
+      const estPlein = MOMENTS_PLEINS.some(m => tmpl.moment.includes(m));
+
+      if (estPlein) {
+        // Insérer une seule fois sans jour
         creneauxAInserer.push(makeCreneau({
-          jour,
+          jour:       null,
           heure_debut: tmpl.heure_debut,
           heure_fin:   tmpl.heure_fin,
           moment:      tmpl.moment,
@@ -128,42 +131,55 @@ export default async function handler(req, res) {
           niveau:      tmpl.niveau || null,
           periode:     heureToPeriode(tmpl.heure_debut)
         }));
+      } else {
+        // Insérer une fois par jour actif
+        for (const jour of jours) {
+          creneauxAInserer.push(makeCreneau({
+            jour,
+            heure_debut: tmpl.heure_debut,
+            heure_fin:   tmpl.heure_fin,
+            moment:      tmpl.moment,
+            type:        'fixe',
+            titre_fixe:  tmpl.moment,
+            niveau:      tmpl.niveau || null,
+            periode:     heureToPeriode(tmpl.heure_debut)
+          }));
+        }
       }
     }
 
     // --- CRÉNEAUX VARIABLES ---
     for (const jour of jours) {
-      const numJourMHM = JOUR_TO_MHM[jour]; // 2, 3 ou 4
+      const numJourMHM = JOUR_TO_MHM[jour];
 
       // Règles quotidiennes → tous les jours
       for (const regle of reglesQuotidiennes) {
         const horaire = deduireHoraire(regle);
         creneauxAInserer.push(makeCreneau({
           jour,
-          heure_debut:     horaire.debut,
-          heure_fin:       horaire.fin,
-          moment:          horaire.moment,
-          niveau:          regle.niveau,
-          periode:         heureToPeriode(horaire.debut),
-          regle_id:        regle.id,
-          lien_programme:  regle.sous_domaine_id
+          heure_debut:    horaire.debut,
+          heure_fin:      horaire.fin,
+          moment:         horaire.moment,
+          niveau:         regle.niveau,
+          periode:        heureToPeriode(horaire.debut),
+          regle_id:       regle.id,
+          lien_programme: regle.sous_domaine_id
         }));
       }
 
-      // Règles du jour MHM correspondant (J2 pour mardi, J3 pour jeudi, J4 pour vendredi)
+      // Règles du jour MHM (J2 mardi, J3 jeudi, J4 vendredi)
       const reglesDuJour = reglesHebdo.filter(r => r.frequence_valeur === numJourMHM);
-
       for (const regle of reglesDuJour) {
         const horaire = deduireHoraire(regle);
         creneauxAInserer.push(makeCreneau({
           jour,
-          heure_debut:     horaire.debut,
-          heure_fin:       horaire.fin,
-          moment:          horaire.moment,
-          niveau:          regle.niveau,
-          periode:         heureToPeriode(horaire.debut),
-          regle_id:        regle.id,
-          lien_programme:  regle.sous_domaine_id
+          heure_debut:    horaire.debut,
+          heure_fin:      horaire.fin,
+          moment:         horaire.moment,
+          niveau:         regle.niveau,
+          periode:        heureToPeriode(horaire.debut),
+          regle_id:       regle.id,
+          lien_programme: regle.sous_domaine_id
         }));
       }
     }
@@ -184,13 +200,12 @@ export default async function handler(req, res) {
       }
     }
 
-    // 10. Retourner le résultat avec la liste des rituels J1
     return res.status(200).json({
       ok: true,
       semaine_id,
-      jours_actifs:       jours,
-      creneaux_inseres:   creneauxAInserer.length,
-      rituels_j1:         rituelsJ1.map(r => ({
+      jours_actifs:     jours,
+      creneaux_inseres: creneauxAInserer.length,
+      rituels_j1:       rituelsJ1.map(r => ({
         id:          r.id,
         niveau:      r.niveau,
         description: r.description
@@ -203,17 +218,14 @@ export default async function handler(req, res) {
   }
 }
 
-// Détermine matin ou aprem selon l'heure de début
 function heureToPeriode(heureDebut) {
   if (!heureDebut) return 'matin';
   const h = parseInt(heureDebut.split(':')[0], 10);
   return h < 13 ? 'matin' : 'aprem';
 }
 
-// Déduit l'horaire depuis la description de la règle
 function deduireHoraire(regle) {
   const desc = regle.description.toLowerCase();
-
   if (desc.includes('rituel')) {
     return { debut: '08:40', fin: '09:20', moment: 'Rituels maths' };
   }

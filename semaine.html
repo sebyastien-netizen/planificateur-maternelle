@@ -948,16 +948,27 @@ function afficherReglesTiroir(regles, numeroSemaine, estCourante) {
     </div>`;
   }
 
-  // Séparer quotidiens et par jour
-  const quotidiens = regles.filter(r => r.frequence_type === 'quotidien');
+  // Filtrer les règles pertinentes pour cette semaine :
+  // - quotidiens : toujours affichés
+  // - semaine_mhm null + jour_mhm non null : récurrents toutes semaines (ex: mascotte PS)
+  // - semaine_mhm === numeroSemaine : spécifiques à cette semaine
+  const reglesFiltrees = regles.filter(r => {
+    if (r.frequence_type === 'quotidien') return true;
+    if (r.jour_mhm !== null && r.semaine_mhm === null) return true;
+    if (r.semaine_mhm === numeroSemaine) return true;
+    return false;
+  });
+
+  // Séparer par jour
+  const quotidiens = reglesFiltrees.filter(r => r.frequence_type === 'quotidien');
   const parJour = { 1: [], 2: [], 3: [], 4: [] };
-  for (const r of regles) {
-    if (r.jour_mhm !== null && r.jour_mhm !== undefined) {
+  for (const r of reglesFiltrees) {
+    if (r.jour_mhm !== null && r.jour_mhm !== undefined && r.frequence_type !== 'quotidien') {
       if (parJour[r.jour_mhm]) parJour[r.jour_mhm].push(r);
     }
   }
 
-  // Rituels quotidiens (tous les jours)
+  // Rituels quotidiens
   if (quotidiens.length > 0) {
     html += `<div class="rituel-jour">
       <div class="rituel-jour-titre">Chaque jour</div>`;
@@ -967,7 +978,7 @@ function afficherReglesTiroir(regles, numeroSemaine, estCourante) {
     html += `</div>`;
   }
 
-  // Rituels J1 (lundi — remplaçant)
+  // J1 — Lundi remplaçant
   if (parJour[1].length > 0) {
     html += `<div class="rituel-jour">
       <div class="rituel-jour-titre j1">Jour 1 — Lundi</div>`;
@@ -977,7 +988,7 @@ function afficherReglesTiroir(regles, numeroSemaine, estCourante) {
     html += `</div>`;
   }
 
-  // Rituels J2 (mardi)
+  // J2 — Mardi
   if (parJour[2].length > 0) {
     html += `<div class="rituel-jour">
       <div class="rituel-jour-titre">Jour 2 — Mardi</div>`;
@@ -987,7 +998,7 @@ function afficherReglesTiroir(regles, numeroSemaine, estCourante) {
     html += `</div>`;
   }
 
-  // Rituels J3 (jeudi)
+  // J3 — Jeudi
   if (parJour[3].length > 0) {
     html += `<div class="rituel-jour">
       <div class="rituel-jour-titre">Jour 3 — Jeudi</div>`;
@@ -997,7 +1008,7 @@ function afficherReglesTiroir(regles, numeroSemaine, estCourante) {
     html += `</div>`;
   }
 
-  // Rituels J4 (vendredi)
+  // J4 — Vendredi
   if (parJour[4].length > 0) {
     html += `<div class="rituel-jour">
       <div class="rituel-jour-titre">Jour 4 — Vendredi</div>`;
@@ -1007,13 +1018,12 @@ function afficherReglesTiroir(regles, numeroSemaine, estCourante) {
     html += `</div>`;
   }
 
-  if (html === '' || (html.indexOf('rituel-carte') === -1)) {
+  if (!html || html.indexOf('rituel-carte') === -1) {
     html += `<div class="tiroir-chargement">Aucun rituel MHM pour cette semaine.</div>`;
   }
 
   corps.innerHTML = html;
 }
-
 function renderCarteTiroir(regle, estJ1, estCourante) {
   // Extraire un titre court depuis la description (avant le premier ":")
   const titreMatch = regle.description.match(/^([^:]+)/);

@@ -13,7 +13,7 @@ const JOUR_TO_MHM = {
 // Moments en pleine largeur — insérés une seule fois sans jour
 const MOMENTS_PLEINS = ['Accueil', 'Récréation', 'Sieste PS', 'Réveil PS'];
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Méthode non autorisée' });
   }

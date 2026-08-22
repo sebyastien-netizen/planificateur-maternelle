@@ -2,7 +2,7 @@
 // GET /api/rituels?periode=1
 // Retourne les règles MHM rituels (quotidiens + jour_mhm non null) pour une période
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   const { periode = 1 } = req.query;
 
   const SUPABASE_URL = process.env.SUPABASE_URL;

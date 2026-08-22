@@ -150,8 +150,14 @@ export default async function handler(req, res) {
     }
 
     // --- RITUELS QUOTIDIENS → moment "Rituels", par colonne jour par jour ---
-    // Triés par id pour garantir le même ordre visuel chaque jour
-    const rituelsQuotidiensTries = [...rituelsQuotidiens].sort((a, b) => a.id.localeCompare(b.id));
+    // Ordre fixe : PS+GS d'abord, puis GS, puis PS — étiquette d'appel toujours en tête
+    const ORDRE_RITUELS = ['PS+GS', 'GS', 'PS'];
+    const rituelsQuotidiensTries = [...rituelsQuotidiens].sort((a, b) => {
+      const ia = ORDRE_RITUELS.indexOf(a.niveau);
+      const ib = ORDRE_RITUELS.indexOf(b.niveau);
+      if (ia !== ib) return ia - ib;
+      return a.id.localeCompare(b.id);
+    });
     for (const jour of jours) {
       for (const regle of rituelsQuotidiensTries) {
         creneauxAInserer.push(makeCreneau({

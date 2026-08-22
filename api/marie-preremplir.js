@@ -192,6 +192,7 @@ export default async function handler(req, res) {
       if (ia !== ib) return ia - ib;
       return a.id.localeCompare(b.id);
     });
+    // Ordre identique pour tous les jours — boucle jours en extérieur
     for (const jour of jours) {
       for (const regle of rituelsQuotidiensTries) {
         creneauxAInserer.push(makeCreneau({
@@ -208,9 +209,21 @@ export default async function handler(req, res) {
     }
 
     // --- RITUELS DU JOUR → par colonne selon J2/J3/J4 ---
+    // Mapping semaine app → semaine MHM (offset -1)
+    // S1 rentrée = pas de semaine MHM spécifique
+    // S2 app = semaine_mhm 2, S3 app = semaine_mhm 3, etc.
+    const numeroSemaineApp = semaine.numero_semaine;
+
     for (const jour of jours) {
       const numJourMHM = JOUR_TO_MHM[jour];
-      const reglesDuJour = reglesHebdo.filter(r => r.frequence_valeur === numJourMHM);
+
+      // Filtrer par jour MHM ET par semaine MHM :
+      // - semaine_mhm null = rituel récurrent toutes semaines (ex: mascotte PS)
+      // - semaine_mhm === numeroSemaineApp = rituel spécifique à cette semaine
+      const reglesDuJour = reglesHebdo.filter(r =>
+        r.frequence_valeur === numJourMHM &&
+        (r.semaine_mhm === null || r.semaine_mhm === numeroSemaineApp)
+      );
 
       for (const regle of reglesDuJour) {
         // PS : 08h40–08h50 · GS : 09h20–09h30

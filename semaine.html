@@ -634,7 +634,7 @@ function ouvrirTiroirSelection(mode, jour, moment, creneauId, heureDeb, heureFin
 
   const label = mode === 'ajouter'
     ? `Choisissez un rituel à ajouter (${JOURS_LABELS[jour] || jour})`
-    : `Choisissez un rituel pour remplacer`;
+    : `Choisissez un rituel pour remplacer — tous les rituels de la période`;
 
   document.getElementById('tiroir-mode-label').textContent = label;
   document.getElementById('tiroir-mode-selection').classList.add('actif');
@@ -643,9 +643,15 @@ function ouvrirTiroirSelection(mode, jour, moment, creneauId, heureDeb, heureFin
   document.getElementById('tiroir-overlay').classList.add('actif');
   document.getElementById('tiroir-rituels').classList.add('actif');
 
-  // Charger tous les rituels en mode sélection (toutes semaines)
+  // Charger TOUS les rituels sans filtre de semaine
+  const corps = document.getElementById('tiroir-corps');
+  corps.innerHTML = '<div class="tiroir-chargement">Chargement des rituels…</div>';
+
   chargerToutesRegles().then(regles => {
+    // modeSelection=true → affiche tout, sans filtre semaine
     afficherReglesTiroir(regles, null, true, true);
+  }).catch(err => {
+    corps.innerHTML = `<div class="tiroir-chargement" style="color:#c0392b">Erreur : ${err.message}</div>`;
   });
 }
 

@@ -3,7 +3,7 @@
 // Body : { semaine_id, jour, moment, niveau, regle_id, heure_debut, heure_fin }
 // Ajoute un créneau rituel pour la semaine courante
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Méthode non autorisée' });
 
   const SUPABASE_URL = process.env.SUPABASE_URL;

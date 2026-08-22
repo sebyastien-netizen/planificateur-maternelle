@@ -14,10 +14,10 @@ export default async function handler(req, res) {
 
   try {
     const url = `${SUPABASE_URL}/rest/v1/maternelle_regles` +
-      `?select=id,niveau,description,frequence_type,frequence_valeur,jour_mhm,est_introduction` +
+      `?select=id,niveau,description,frequence_type,frequence_valeur,jour_mhm,semaine_mhm,est_introduction` +
       `&periode=eq.${periode}` +
       `&or=(frequence_type.eq.quotidien,jour_mhm.not.is.null)` +
-      `&order=niveau,jour_mhm,id`;
+      `&order=niveau,semaine_mhm,jour_mhm,id`;
 
     const supaRes = await fetch(url, {
       headers: {

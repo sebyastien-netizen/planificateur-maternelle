@@ -150,9 +150,10 @@ export default async function handler(req, res) {
     }
 
     // --- RITUELS QUOTIDIENS → moment "Rituels", par colonne jour par jour ---
-    // Insérés pour chaque jour actif pour permettre variation future
+    // Triés par id pour garantir le même ordre visuel chaque jour
+    const rituelsQuotidiensTries = [...rituelsQuotidiens].sort((a, b) => a.id.localeCompare(b.id));
     for (const jour of jours) {
-      for (const regle of rituelsQuotidiens) {
+      for (const regle of rituelsQuotidiensTries) {
         creneauxAInserer.push(makeCreneau({
           jour,
           heure_debut:    '08:35',

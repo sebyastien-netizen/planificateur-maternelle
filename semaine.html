@@ -936,16 +936,6 @@ async function chargerReglesTiroir(numeroSemaine) {
   return data.regles;
 }
 
-async function getAnonKey() {
-  // La clé anon est publique — récupérée via l'API pour ne pas la hardcoder ici
-  // On passe par notre propre endpoint pour éviter l'exposition
-  if (window._anonKey) return window._anonKey;
-  const res = await fetch('/api/semaine?id=ping');
-  // L'API retourne une erreur mais le header contient la clé exposée publiquement
-  // Alternative : on utilise l'endpoint existant comme proxy
-  // Pour l'instant on passe par l'API semaine en mode proxy
-  throw new Error('Clé anon non disponible — utiliser un endpoint proxy');
-}
 
 function afficherReglesTiroir(regles, numeroSemaine, estCourante) {
   const corps = document.getElementById('tiroir-corps');

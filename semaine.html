@@ -288,8 +288,10 @@ const JOURS_LABELS = {
 const ORDRE_MATIN = [
   'Accueil',
   'Rituels',
-  'Rituels maths',
-  'Ateliers',
+  'Rituels maths PS',
+  'Ateliers rotation 1',
+  'Rituels maths GS',
+  'Ateliers rotation 2',
   'Motricité',
   'Récréation',
   'Motricité / Littérature'
@@ -563,7 +565,7 @@ function renderGroupe(creneaux) {
 
 // Moments toujours en pleine largeur
 function estMomentPlein(moment) {
-  const pleins = ['Accueil', 'Récréation', 'Sieste PS', 'Réveil PS'];
+  const pleins = ['Accueil', 'Récréation', 'Sieste PS', 'Réveil PS', 'Accueil aprem'];
   return pleins.some(p => moment.includes(p));
 }
 
@@ -572,8 +574,10 @@ function getHorairesDefaut(moment, periode) {
   const defauts = {
     'Accueil':                 { debut: '08:20', fin: '08:35' },
     'Rituels':                 { debut: '08:35', fin: '08:40' },
-    'Rituels maths':           { debut: '08:40', fin: '08:50' },
-    'Ateliers':                { debut: '08:50', fin: '10:00' },
+    'Rituels maths PS':        { debut: '08:40', fin: '08:50' },
+    'Ateliers rotation 1':     { debut: '08:50', fin: '09:20' },
+    'Rituels maths GS':        { debut: '09:20', fin: '09:30' },
+    'Ateliers rotation 2':     { debut: '09:30', fin: '10:00' },
     'Motricité':               { debut: '10:00', fin: '10:30' },
     'Récréation':              { debut: '10:30', fin: '11:00' },
     'Motricité / Littérature': { debut: '11:00', fin: '11:30' },

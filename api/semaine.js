@@ -1,611 +1,79 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cahier journal — Planificateur Maternelle</title>
-  <style>
-    /* Reset et base */
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+// api/semaine.js
+// Retourne une semaine avec ses créneaux
+// GET /api/semaine?id=UUID_SEMAINE
 
-    body {
-      font-family: system-ui, sans-serif;
-      background: #f5f5f0;
-      padding: 1.5rem;
-      color: #1a1a1a;
-    }
-
-    /* En-tête de page */
-    .page-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 1rem;
-    }
-
-    .page-header h1 {
-      font-size: 1.1rem;
-      font-weight: 500;
-      color: #2d6a4f;
-    }
-
-    .page-header p {
-      font-size: 0.8rem;
-      color: #888;
-      margin-top: 2px;
-    }
-
-    .btn-retour {
-      font-size: 0.85rem;
-      color: #2d6a4f;
-      text-decoration: none;
-      border: 1px solid #2d6a4f;
-      padding: 6px 14px;
-      border-radius: 8px;
-    }
-
-    /* Conteneur principal */
-    .semaine-wrapper {
-      background: white;
-      border-radius: 12px;
-      border: 1px solid #e5e5e0;
-      overflow: hidden;
-    }
-
-    /* En-tête du tableau */
-    .semaine-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 1rem 1.25rem;
-      border-bottom: 1px solid #e5e5e0;
-      background: #fafaf8;
-    }
-
-    .semaine-titre h2 {
-      font-size: 0.95rem;
-      font-weight: 500;
-      color: #1a1a1a;
-    }
-
-    .semaine-titre p {
-      font-size: 0.75rem;
-      color: #888;
-      margin-top: 2px;
-    }
-
-    /* Bascule matin / après-midi */
-    .toggle-group {
-      display: flex;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      overflow: hidden;
-    }
-
-    .toggle-btn {
-      padding: 6px 16px;
-      font-size: 0.8rem;
-      border: none;
-      cursor: pointer;
-      background: transparent;
-      color: #888;
-      transition: background 0.15s;
-    }
-
-    .toggle-btn.actif {
-      background: #e8f4ee;
-      color: #2d6a4f;
-      font-weight: 500;
-    }
-
-    /* Grille principale */
-    .grille {
-      display: grid;
-      grid-template-columns: 110px repeat(var(--nb-jours, 3), 1fr);
-    }
-
-    /* En-têtes colonnes */
-    .col-header {
-      padding: 8px 12px;
-      font-size: 0.75rem;
-      font-weight: 500;
-      color: #666;
-      background: #f5f5f0;
-      border-right: 1px solid #e5e5e0;
-      border-bottom: 1px solid #ccc;
-      text-align: center;
-    }
-
-    .col-header:last-child { border-right: none; }
-    .col-header.col-horaire { text-align: left; }
-
-    /* Colonne horaire + moment */
-    .cellule-horaire {
-      padding: 8px 10px;
-      background: #f5f5f0;
-      border-right: 1px solid #e5e5e0;
-      border-bottom: 1px solid #e5e5e0;
-    }
-
-    .horaire-time {
-      font-size: 0.68rem;
-      color: #aaa;
-      white-space: nowrap;
-    }
-
-    .horaire-moment {
-      font-size: 0.7rem;
-      font-weight: 500;
-      color: #666;
-      margin-top: 4px;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      line-height: 1.3;
-    }
-
-    /* Cellule de contenu */
-    .cellule {
-      padding: 8px 10px;
-      border-right: 1px solid #e5e5e0;
-      border-bottom: 1px solid #e5e5e0;
-      min-height: 64px;
-      vertical-align: top;
-    }
-
-    .cellule:last-child { border-right: none; }
-
-    /* Cellule pleine largeur */
-    .cellule-pleine {
-      grid-column: 2 / -1;
-      background: #f9f9f7;
-    }
-
-    /* Fond ateliers */
-    .cellule-ateliers { background: #f0f7eb; }
-
-    /* Cellule vide (à remplir) */
-    .cellule-vide {
-      background: #fafaf8;
-      border: 1px dashed #ddd;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #ccc;
-      font-size: 0.7rem;
-      font-style: italic;
-      min-height: 64px;
-    }
-
-    /* Groupe d'entrées dans une cellule */
-    .groupe { display: flex; flex-direction: column; gap: 6px; }
-
-    /* Séparateur PS / GS */
-    .separateur {
-      border: none;
-      border-top: 1px dashed #ddd;
-      margin: 2px 0;
-    }
-
-    /* Une entrée */
-    .entree { display: flex; flex-direction: column; gap: 2px; }
-
-    .entree-top {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      flex-wrap: wrap;
-    }
-
-    /* Badges */
-    .badge {
-      font-size: 0.65rem;
-      font-weight: 500;
-      padding: 1px 6px;
-      border-radius: 4px;
-      white-space: nowrap;
-      flex-shrink: 0;
-    }
-
-    .badge-ps   { background: #fff3cd; color: #856404; }
-    .badge-gs   { background: #dbeafe; color: #1e40af; }
-    .badge-psgs { background: #f0f0ee; color: #555; }
-
-    .badge-role {
-      background: #f0f0ee;
-      color: #888;
-      border: 1px solid #e0e0dc;
-    }
-
-    .badge-fixe {
-      background: #eef2ff;
-      color: #4338ca;
-      font-size: 0.6rem;
-    }
-
-    /* Texte activité */
-    .activite {
-      font-size: 0.75rem;
-      color: #1a1a1a;
-      line-height: 1.3;
-    }
-
-    /* Lien programme */
-    .programme {
-      font-size: 0.65rem;
-      color: #aaa;
-      padding-left: 2px;
-      line-height: 1.3;
-    }
-
-    /* État chargement / erreur */
-    .etat {
-      padding: 2rem;
-      text-align: center;
-      color: #888;
-      font-size: 0.85rem;
-    }
-
-    .etat-erreur { color: #c0392b; }
-
-    /* Vue après-midi cachée par défaut */
-    .vue-matin { display: contents; }
-    .vue-aprem { display: none; }
-
-    /* Impression */
-    @media print {
-      body { background: white; padding: 0; }
-      .btn-retour { display: none; }
-      .toggle-group { display: none; }
-      .semaine-wrapper { border: none; border-radius: 0; }
-    }
-  </style>
-</head>
-<body>
-
-<div class="page-header">
-  <div>
-    <h1>🍀 Cahier journal</h1>
-    <p id="sous-titre">Chargement…</p>
-  </div>
-  <a href="index.html" class="btn-retour">← Retour</a>
-</div>
-
-<div class="semaine-wrapper" id="semaine-wrapper">
-  <div class="etat" id="etat-chargement">Chargement de la semaine…</div>
-</div>
-
-<script>
-// =============================================
-// Configuration
-// =============================================
-const JOURS_LABELS = {
-  mardi:    'Mardi',
-  jeudi:    'Jeudi',
-  vendredi: 'Vendredi'
-};
-
-// Moments du matin dans l'ordre
-const ORDRE_MATIN = [
-  'Accueil',
-  'Rituels',
-  'Rituels maths',
-  'Ateliers',
-  'Motricité',
-  'Récréation',
-  'Motricité / Littérature'
-];
-
-// Moments de l'après-midi dans l'ordre
-const ORDRE_APREM = [
-  'Accueil',
-  'Sieste PS',
-  'Phonologie',
-  'Maths',
-  'Réveil PS',
-  'Sciences / Découverte',
-  'Récréation',
-  'Anglais / Arts'
-];
-
-// =============================================
-// Chargement principal
-// =============================================
-async function chargerSemaine() {
-  // Récupérer l'id depuis l'URL
-  const params = new URLSearchParams(window.location.search);
-  const semaineId = params.get('id');
-
-  if (!semaineId) {
-    afficherErreur('Aucune semaine sélectionnée. Ajoutez ?id=UUID à l\'URL.');
-    return;
+export default async function handler(req, res) {
+  // Seulement GET
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'Méthode non autorisée' });
   }
+
+  const { id } = req.query;
+
+  if (!id) {
+    return res.status(400).json({ error: 'Paramètre id manquant' });
+  }
+
+  const SUPABASE_URL = process.env.SUPABASE_URL;
+  const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
+
+  const headers = {
+    'apikey': SUPABASE_SERVICE_KEY,
+    'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+    'Content-Type': 'application/json'
+  };
 
   try {
-    const res = await fetch(`/api/semaine?id=${semaineId}`);
+    // 1. Récupérer la semaine
+    const resSemaine = await fetch(
+      `${SUPABASE_URL}/rest/v1/maternelle_semaines?id=eq.${id}&select=id,date_lundi,a_mardi,numero_semaine,periode_id`,
+      { headers }
+    );
 
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.error || `Erreur ${res.status}`);
+    if (!resSemaine.ok) {
+      throw new Error(`Erreur Supabase semaine : ${resSemaine.status}`);
     }
 
-    const data = await res.json();
-    afficherSemaine(data.semaine, data.creneaux);
+    const semaines = await resSemaine.json();
+
+    if (!semaines.length) {
+      return res.status(404).json({ error: 'Semaine introuvable' });
+    }
+
+    const semaine = semaines[0];
+
+    // 2. Récupérer les créneaux de cette semaine
+    const resCreneaux = await fetch(
+      `${SUPABASE_URL}/rest/v1/maternelle_creneaux?semaine_id=eq.${id}&select=id,jour,heure_debut,heure_fin,moment,groupe,role,notes,lien_programme,activite,regle_id,periode,type,titre_fixe&order=heure_debut.asc`,
+      { headers }
+    );
+
+    if (!resCreneaux.ok) {
+      throw new Error(`Erreur Supabase créneaux : ${resCreneaux.status}`);
+    }
+
+    const creneaux = await resCreneaux.json();
+
+    // 3. Récupérer la période pour affichage
+    const resPeriode = await fetch(
+      `${SUPABASE_URL}/rest/v1/maternelle_periodes?id=eq.${semaine.periode_id}&select=numero,date_debut,date_fin`,
+      { headers }
+    );
+
+    const periodes = await resPeriode.json();
+    const periode = periodes[0] || null;
+
+    // 4. Retourner le tout
+    return res.status(200).json({
+      semaine: {
+        ...semaine,
+        periode
+      },
+      creneaux
+    });
 
   } catch (err) {
-    afficherErreur(`Impossible de charger la semaine : ${err.message}`);
+    console.error('api/semaine.js error:', err);
+    return res.status(500).json({ error: err.message });
   }
 }
-
-// =============================================
-// Affichage de la semaine
-// =============================================
-function afficherSemaine(semaine, creneaux) {
-  // Déterminer les jours actifs
-  const jours = [];
-  if (semaine.a_mardi) jours.push('mardi');
-  jours.push('jeudi');
-  jours.push('vendredi');
-
-  // Sous-titre page
-  const dateLundi = new Date(semaine.date_lundi);
-  const dateVendredi = new Date(dateLundi);
-  dateVendredi.setDate(dateLundi.getDate() + 4);
-
-  document.getElementById('sous-titre').textContent =
-    `Année 2026-2027 — Période ${semaine.periode?.numero || '?'} — Semaine ${semaine.numero_semaine}`;
-
-  // Label dates pour les colonnes
-  const labelJour = (jour) => {
-    const offset = { mardi: 1, jeudi: 3, vendredi: 4 };
-    const d = new Date(dateLundi);
-    d.setDate(dateLundi.getDate() + offset[jour]);
-    return `${JOURS_LABELS[jour]} ${d.getDate()}`;
-  };
-
-  // Grouper les créneaux par periode + moment + jour
-  const parPeriode = { matin: {}, aprem: {} };
-  for (const c of creneaux) {
-    const periode = c.periode || 'matin';
-    const moment = c.moment || 'Divers';
-    if (!parPeriode[periode][moment]) parPeriode[periode][moment] = {};
-    if (!parPeriode[periode][moment][c.jour]) parPeriode[periode][moment][c.jour] = [];
-    parPeriode[periode][moment][c.jour].push(c);
-  }
-
-  // Construire le HTML
-  const wrapper = document.getElementById('semaine-wrapper');
-  wrapper.innerHTML = `
-    <!-- En-tête -->
-    <div class="semaine-header">
-      <div class="semaine-titre">
-        <h2>Semaine ${semaine.numero_semaine} — P${semaine.periode?.numero || '?'}</h2>
-        <p>${jours.length} jours de classe · ${jours.map(j => JOURS_LABELS[j]).join(' / ')}</p>
-      </div>
-      <div class="toggle-group">
-        <button class="toggle-btn actif" onclick="basculerVue('matin', this)">Matin</button>
-        <button class="toggle-btn" onclick="basculerVue('aprem', this)">Après-midi</button>
-      </div>
-    </div>
-
-    <!-- Grille -->
-    <div class="grille" id="grille" style="--nb-jours: ${jours.length}">
-
-      <!-- En-têtes colonnes -->
-      <div class="col-header col-horaire"></div>
-      ${jours.map(j => `<div class="col-header">${labelJour(j)}</div>`).join('')}
-
-      <!-- Vue matin -->
-      <div class="vue-matin" id="vue-matin">
-        ${construireVue(parPeriode.matin, ORDRE_MATIN, jours, creneaux, 'matin')}
-      </div>
-
-      <!-- Vue après-midi -->
-      <div class="vue-aprem" id="vue-aprem">
-        ${construireVue(parPeriode.aprem, ORDRE_APREM, jours, creneaux, 'aprem')}
-      </div>
-
-    </div>
-  `;
-}
-
-// =============================================
-// Construction d'une vue (matin ou aprem)
-// =============================================
-function construireVue(momentMap, ordre, jours, tousCreneaux, periode) {
-  // Moments présents dans les créneaux + ceux de l'ordre par défaut
-  const momentsPresents = new Set([
-    ...ordre,
-    ...Object.keys(momentMap)
-  ]);
-
-  // Filtrer uniquement ceux qui ont des créneaux OU sont dans l'ordre de base
-  const momentsAffiches = ordre.filter(m => momentsPresents.has(m));
-
-  // Ajouter les moments hors ordre (créneaux variables non prévus)
-  for (const m of Object.keys(momentMap)) {
-    if (!momentsAffiches.includes(m)) momentsAffiches.push(m);
-  }
-
-  let html = '';
-
-  for (const moment of momentsAffiches) {
-    const creneauxDuMoment = momentMap[moment] || {};
-
-    // Déterminer les horaires depuis les créneaux existants
-    let heureDebut = '';
-    let heureFin = '';
-    for (const jour of jours) {
-      const cs = creneauxDuMoment[jour];
-      if (cs && cs.length > 0) {
-        heureDebut = cs[0].heure_debut?.substring(0, 5) || '';
-        heureFin = cs[0].heure_fin?.substring(0, 5) || '';
-        break;
-      }
-    }
-
-    // Horaires fixes par défaut si aucun créneau
-    if (!heureDebut) {
-      const horairesDefaut = getHorairesDefaut(moment, periode);
-      heureDebut = horairesDefaut.debut;
-      heureFin = horairesDefaut.fin;
-    }
-
-    // Déterminer si ce moment est pleine largeur
-    const estPlein = estMomentPlein(moment);
-
-    // Colonne horaire
-    html += `
-      <div class="cellule-horaire">
-        <div class="horaire-time">${heureDebut}${heureFin ? ' – ' + heureFin : ''}</div>
-        <div class="horaire-moment">${moment}</div>
-      </div>
-    `;
-
-    if (estPlein) {
-      // Cellule pleine largeur
-      const cs = [];
-      for (const jour of jours) {
-        if (creneauxDuMoment[jour]) cs.push(...creneauxDuMoment[jour]);
-      }
-      html += `<div class="cellule cellule-pleine">
-        ${cs.length > 0 ? renderGroupe(cs) : '<span style="color:#ccc;font-size:0.7rem;font-style:italic">—</span>'}
-      </div>`;
-    } else {
-      // Une cellule par jour
-      for (const jour of jours) {
-        const cs = creneauxDuMoment[jour] || [];
-        const estAtelier = moment.toLowerCase().includes('atelier');
-        const classeExtra = estAtelier ? ' cellule-ateliers' : '';
-
-        if (cs.length > 0) {
-          html += `<div class="cellule${classeExtra}">${renderGroupe(cs)}</div>`;
-        } else {
-          html += `<div class="cellule${classeExtra} cellule-vide">À remplir</div>`;
-        }
-      }
-    }
-  }
-
-  return html;
-}
-
-// =============================================
-// Rendu d'un groupe de créneaux dans une cellule
-// =============================================
-function renderGroupe(creneaux) {
-  let html = '<div class="groupe">';
-  let precedentNiveau = null;
-
-  for (const c of creneaux) {
-    // Séparateur PS / GS si changement de niveau
-    if (precedentNiveau && precedentNiveau !== c.niveau && c.niveau) {
-      html += '<hr class="separateur">';
-    }
-
-    html += '<div class="entree"><div class="entree-top">';
-
-    // Badge niveau
-    if (c.niveau === 'PS') {
-      html += '<span class="badge badge-ps">PS</span>';
-    } else if (c.niveau === 'GS') {
-      html += '<span class="badge badge-gs">GS</span>';
-    } else if (c.niveau === 'PS+GS') {
-      html += '<span class="badge badge-ps">PS</span><span class="badge badge-gs">GS</span>';
-    }
-
-    // Badge type fixe
-    if (c.type === 'fixe') {
-      html += '<span class="badge badge-fixe">FIXE</span>';
-    }
-
-    // Badge rôle
-    if (c.role) {
-      html += `<span class="badge badge-role">${c.role}</span>`;
-    }
-
-    // Texte activité
-    const texte = c.activite || c.titre_fixe || (c.regle_id ? `[Règle : ${c.regle_id}]` : '—');
-    html += `<span class="activite">${texte}</span>`;
-
-    html += '</div>'; // entree-top
-
-    // Lien programme
-    if (c.lien_programme) {
-      html += `<div class="programme">► ${c.lien_programme}</div>`;
-    }
-
-    // Notes
-    if (c.notes) {
-      html += `<div class="programme" style="color:#888">${c.notes}</div>`;
-    }
-
-    html += '</div>'; // entree
-    precedentNiveau = c.niveau;
-  }
-
-  html += '</div>'; // groupe
-  return html;
-}
-
-// =============================================
-// Helpers
-// =============================================
-
-// Moments toujours en pleine largeur
-function estMomentPlein(moment) {
-  const pleins = ['Accueil', 'Récréation', 'Sieste PS', 'Réveil PS'];
-  return pleins.some(p => moment.includes(p));
-}
-
-// Horaires par défaut si aucun créneau en base
-function getHorairesDefaut(moment, periode) {
-  const defauts = {
-    'Accueil':                 { debut: '08:20', fin: '08:35' },
-    'Rituels':                 { debut: '08:35', fin: '08:40' },
-    'Rituels maths':           { debut: '08:40', fin: '08:50' },
-    'Ateliers':                { debut: '08:50', fin: '10:00' },
-    'Motricité':               { debut: '10:00', fin: '10:30' },
-    'Récréation':              { debut: '10:30', fin: '11:00' },
-    'Motricité / Littérature': { debut: '11:00', fin: '11:30' },
-    'Sieste PS':               { debut: '13:30', fin: '14:30' },
-    'Phonologie':              { debut: '13:30', fin: '14:00' },
-    'Maths':                   { debut: '14:00', fin: '14:30' },
-    'Réveil PS':               { debut: '14:30', fin: '15:00' },
-    'Sciences / Découverte':   { debut: '15:00', fin: '15:30' },
-    'Anglais / Arts':          { debut: '16:00', fin: '16:30' },
-  };
-  return defauts[moment] || { debut: '', fin: '' };
-}
-
-// Bascule matin / après-midi
-function basculerVue(vue, btn) {
-  const matin = document.getElementById('vue-matin');
-  const aprem = document.getElementById('vue-aprem');
-  const btns = document.querySelectorAll('.toggle-btn');
-
-  btns.forEach(b => b.classList.remove('actif'));
-  btn.classList.add('actif');
-
-  if (vue === 'matin') {
-    matin.style.display = 'contents';
-    aprem.style.display = 'none';
-  } else {
-    matin.style.display = 'none';
-    aprem.style.display = 'contents';
-  }
-}
-
-// Afficher une erreur
-function afficherErreur(msg) {
-  document.getElementById('semaine-wrapper').innerHTML =
-    `<div class="etat etat-erreur">⚠️ ${msg}</div>`;
-}
-
-// =============================================
-// Lancement
-// =============================================
-chargerSemaine();
-</script>
-
-</body>
-</html>

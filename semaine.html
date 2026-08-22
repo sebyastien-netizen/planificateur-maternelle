@@ -363,13 +363,15 @@ function afficherSemaine(semaine, creneaux) {
   };
 
   // Grouper les créneaux par periode + moment + jour
+  // Les créneaux avec jour=null sont pleine largeur — stockés sous la clé '__plein__'
   const parPeriode = { matin: {}, aprem: {} };
   for (const c of creneaux) {
     const periode = c.periode || 'matin';
-    const moment = c.moment || 'Divers';
+    const moment  = c.moment  || 'Divers';
+    const cleJour = c.jour || '__plein__';
     if (!parPeriode[periode][moment]) parPeriode[periode][moment] = {};
-    if (!parPeriode[periode][moment][c.jour]) parPeriode[periode][moment][c.jour] = [];
-    parPeriode[periode][moment][c.jour].push(c);
+    if (!parPeriode[periode][moment][cleJour]) parPeriode[periode][moment][cleJour] = [];
+    parPeriode[periode][moment][cleJour].push(c);
   }
 
   // Construire le HTML
@@ -434,11 +436,13 @@ function construireVue(momentMap, ordre, jours, tousCreneaux, periode) {
     // Déterminer les horaires depuis les créneaux existants
     let heureDebut = '';
     let heureFin = '';
-    for (const jour of jours) {
-      const cs = creneauxDuMoment[jour];
+    // Chercher d'abord dans __plein__, puis dans les jours
+    const toutesLesCles = ['__plein__', ...jours];
+    for (const cle of toutesLesCles) {
+      const cs = creneauxDuMoment[cle];
       if (cs && cs.length > 0) {
         heureDebut = cs[0].heure_debut?.substring(0, 5) || '';
-        heureFin = cs[0].heure_fin?.substring(0, 5) || '';
+        heureFin   = cs[0].heure_fin?.substring(0, 5)   || '';
         break;
       }
     }
@@ -463,9 +467,15 @@ function construireVue(momentMap, ordre, jours, tousCreneaux, periode) {
 
     if (estPlein) {
       // Cellule pleine largeur
+      // Les créneaux pleine largeur sont stockés sous '__plein__' (jour=null)
+      // ou sous les jours si insérés par jour (fallback)
       const cs = [];
-      for (const jour of jours) {
-        if (creneauxDuMoment[jour]) cs.push(...creneauxDuMoment[jour]);
+      if (creneauxDuMoment['__plein__']) {
+        cs.push(...creneauxDuMoment['__plein__']);
+      } else {
+        for (const jour of jours) {
+          if (creneauxDuMoment[jour]) { cs.push(...creneauxDuMoment[jour]); break; }
+        }
       }
       html += `<div class="cellule cellule-pleine">
         ${cs.length > 0 ? renderGroupe(cs) : '<span style="color:#ccc;font-size:0.7rem;font-style:italic">—</span>'}

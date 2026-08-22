@@ -117,7 +117,7 @@ module.exports = async function handler(req, res) {
 
     // 4. Récupérer toutes les règles MHM pour cette période
     const resRegles = await fetch(
-      `${SUPABASE_URL}/rest/v1/maternelle_regles?periode=eq.${numPeriode}&select=id,niveau,frequence_type,frequence_valeur,description,domaine_id,sous_domaine_id`,
+      `${SUPABASE_URL}/rest/v1/maternelle_regles?periode=eq.${numPeriode}&select=id,niveau,frequence_type,frequence_valeur,semaine_mhm,jour_mhm,description,domaine_id,sous_domaine_id`,
       { headers }
     );
     const regles = await resRegles.json();

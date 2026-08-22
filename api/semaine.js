@@ -44,7 +44,7 @@ export default async function handler(req, res) {
 
     // 2. Récupérer les créneaux de cette semaine
     const resCreneaux = await fetch(
-      `${SUPABASE_URL}/rest/v1/maternelle_creneaux?semaine_id=eq.${id}&select=id,jour,heure_debut,heure_fin,moment,groupe,niveau,role,notes,lien_programme,activite,regle_id,periode,type,titre_fixe&order=heure_debut.asc`,
+      `${SUPABASE_URL}/rest/v1/maternelle_creneaux?semaine_id=eq.${id}&select=id,jour,heure_debut,heure_fin,moment,groupe,role,notes,lien_programme,activite,regle_id,periode,type,titre_fixe&order=heure_debut.asc`,
       { headers }
     );
 

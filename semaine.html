@@ -5,531 +5,208 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Cahier journal — Planificateur Maternelle</title>
   <style>
-    /* Reset et base */
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: #f5f5f0; padding: 1.5rem; color: #1a1a1a; }
 
-    body {
-      font-family: system-ui, sans-serif;
-      background: #f5f5f0;
-      padding: 1.5rem;
-      color: #1a1a1a;
-    }
+    .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+    .page-header h1 { font-size: 1.1rem; font-weight: 500; color: #2d6a4f; }
+    .page-header p { font-size: 0.8rem; color: #888; margin-top: 2px; }
+    .header-actions { display: flex; align-items: center; gap: 10px; }
+    .btn-retour { font-size: 0.85rem; color: #2d6a4f; text-decoration: none; border: 1px solid #2d6a4f; padding: 6px 14px; border-radius: 8px; }
+    .btn-rituels { font-size: 0.85rem; color: #6b4fa0; background: #f0ecf8; border: 1px solid #c4b0e0; padding: 6px 14px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+    .btn-rituels:hover { background: #e4d9f5; }
 
-    /* En-tête de page */
-    .page-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 1rem;
-    }
+    .semaine-wrapper { background: white; border-radius: 12px; border: 1px solid #e5e5e0; overflow: hidden; }
+    .semaine-header { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.25rem; border-bottom: 1px solid #e5e5e0; background: #fafaf8; }
+    .semaine-titre h2 { font-size: 0.95rem; font-weight: 500; color: #1a1a1a; }
+    .semaine-titre p { font-size: 0.75rem; color: #888; margin-top: 2px; }
 
-    .page-header h1 {
-      font-size: 1.1rem;
-      font-weight: 500;
-      color: #2d6a4f;
-    }
+    .toggle-group { display: flex; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; }
+    .toggle-btn { padding: 6px 16px; font-size: 0.8rem; border: none; cursor: pointer; background: transparent; color: #888; transition: background 0.15s; }
+    .toggle-btn.actif { background: #e8f4ee; color: #2d6a4f; font-weight: 500; }
 
-    .page-header p {
-      font-size: 0.8rem;
-      color: #888;
-      margin-top: 2px;
-    }
-
-    .header-actions {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .btn-retour {
-      font-size: 0.85rem;
-      color: #2d6a4f;
-      text-decoration: none;
-      border: 1px solid #2d6a4f;
-      padding: 6px 14px;
-      border-radius: 8px;
-    }
-
-    /* Bouton rituels */
-    .btn-rituels {
-      font-size: 0.85rem;
-      color: #6b4fa0;
-      background: #f0ecf8;
-      border: 1px solid #c4b0e0;
-      padding: 6px 14px;
-      border-radius: 8px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .btn-rituels:hover {
-      background: #e4d9f5;
-    }
-
-    /* Conteneur principal */
-    .semaine-wrapper {
-      background: white;
-      border-radius: 12px;
-      border: 1px solid #e5e5e0;
-      overflow: hidden;
-    }
-
-    /* En-tête du tableau */
-    .semaine-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 1rem 1.25rem;
-      border-bottom: 1px solid #e5e5e0;
-      background: #fafaf8;
-    }
-
-    .semaine-titre h2 {
-      font-size: 0.95rem;
-      font-weight: 500;
-      color: #1a1a1a;
-    }
-
-    .semaine-titre p {
-      font-size: 0.75rem;
-      color: #888;
-      margin-top: 2px;
-    }
-
-    /* Bascule matin / après-midi */
-    .toggle-group {
-      display: flex;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      overflow: hidden;
-    }
-
-    .toggle-btn {
-      padding: 6px 16px;
-      font-size: 0.8rem;
-      border: none;
-      cursor: pointer;
-      background: transparent;
-      color: #888;
-      transition: background 0.15s;
-    }
-
-    .toggle-btn.actif {
-      background: #e8f4ee;
-      color: #2d6a4f;
-      font-weight: 500;
-    }
-
-    /* Grille principale */
-    .grille {
-      display: grid;
-      grid-template-columns: 110px repeat(var(--nb-jours, 3), 1fr);
-    }
-
-    /* En-têtes colonnes */
-    .col-header {
-      padding: 8px 12px;
-      font-size: 0.75rem;
-      font-weight: 500;
-      color: #666;
-      background: #f5f5f0;
-      border-right: 1px solid #e5e5e0;
-      border-bottom: 1px solid #ccc;
-      text-align: center;
-    }
-
+    .grille { display: grid; grid-template-columns: 110px repeat(var(--nb-jours, 3), 1fr); }
+    .col-header { padding: 8px 12px; font-size: 0.75rem; font-weight: 500; color: #666; background: #f5f5f0; border-right: 1px solid #e5e5e0; border-bottom: 1px solid #ccc; text-align: center; }
     .col-header:last-child { border-right: none; }
     .col-header.col-horaire { text-align: left; }
 
-    /* Colonne horaire + moment */
-    .cellule-horaire {
-      padding: 8px 10px;
-      background: #f5f5f0;
-      border-right: 1px solid #e5e5e0;
-      border-bottom: 1px solid #e5e5e0;
-    }
+    .cellule-horaire { padding: 8px 10px; background: #f5f5f0; border-right: 1px solid #e5e5e0; border-bottom: 1px solid #e5e5e0; }
+    .horaire-time { font-size: 0.68rem; color: #aaa; white-space: nowrap; }
+    .horaire-moment { font-size: 0.7rem; font-weight: 500; color: #666; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.04em; line-height: 1.3; }
 
-    .horaire-time {
-      font-size: 0.68rem;
-      color: #aaa;
-      white-space: nowrap;
-    }
-
-    .horaire-moment {
-      font-size: 0.7rem;
-      font-weight: 500;
-      color: #666;
-      margin-top: 4px;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      line-height: 1.3;
-    }
-
-    /* Cellule de contenu */
-    .cellule {
-      padding: 8px 10px;
-      border-right: 1px solid #e5e5e0;
-      border-bottom: 1px solid #e5e5e0;
-      min-height: 64px;
-      vertical-align: top;
-    }
-
+    .cellule { padding: 8px 10px; border-right: 1px solid #e5e5e0; border-bottom: 1px solid #e5e5e0; min-height: 64px; vertical-align: top; }
     .cellule:last-child { border-right: none; }
-
-    /* Cellule pleine largeur */
-    .cellule-pleine {
-      grid-column: 2 / -1;
-      background: #f9f9f7;
-    }
-
-    /* Fond ateliers */
+    .cellule-pleine { grid-column: 2 / -1; background: #f9f9f7; }
     .cellule-ateliers { background: #f0f7eb; }
+    .cellule-vide { background: #fafaf8; border: 1px dashed #ddd; display: flex; align-items: center; justify-content: center; color: #ccc; font-size: 0.7rem; font-style: italic; min-height: 64px; }
 
-    /* Cellule vide (à remplir) */
-    .cellule-vide {
-      background: #fafaf8;
-      border: 1px dashed #ddd;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #ccc;
-      font-size: 0.7rem;
-      font-style: italic;
-      min-height: 64px;
-    }
-
-    /* Groupe d'entrées dans une cellule */
     .groupe { display: flex; flex-direction: column; gap: 6px; }
-
-    /* Séparateur PS / GS */
-    .separateur {
-      border: none;
-      border-top: 1px dashed #ddd;
-      margin: 2px 0;
-    }
-
-    /* Une entrée */
+    .separateur { border: none; border-top: 1px dashed #ddd; margin: 2px 0; }
     .entree { display: flex; flex-direction: column; gap: 2px; }
+    .entree-top { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
 
-    .entree-top {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      flex-wrap: wrap;
+    /* Entrée cliquable dans le cahier */
+    .entree-cliquable {
+      cursor: pointer;
+      border-radius: 6px;
+      padding: 3px 4px;
+      margin: -3px -4px;
+      transition: background 0.15s;
+      position: relative;
+    }
+    .entree-cliquable:hover { background: #f0ecf8; }
+    .entree-cliquable:hover .entree-actions-hint {
+      opacity: 1;
+    }
+    .entree-actions-hint {
+      opacity: 0;
+      font-size: 0.62rem;
+      color: #9b7ec8;
+      transition: opacity 0.15s;
+      padding-top: 2px;
     }
 
-    /* Badges */
-    .badge {
-      font-size: 0.65rem;
-      font-weight: 500;
-      padding: 1px 6px;
-      border-radius: 4px;
-      white-space: nowrap;
-      flex-shrink: 0;
-    }
-
-    .badge-ps   { background: #fff3cd; color: #856404; }
-    .badge-gs   { background: #dbeafe; color: #1e40af; }
+    .badge { font-size: 0.65rem; font-weight: 500; padding: 1px 6px; border-radius: 4px; white-space: nowrap; flex-shrink: 0; }
+    .badge-ps { background: #fff3cd; color: #856404; }
+    .badge-gs { background: #dbeafe; color: #1e40af; }
     .badge-psgs { background: #f0f0ee; color: #555; }
+    .badge-role { background: #f0f0ee; color: #888; border: 1px solid #e0e0dc; }
+    .badge-fixe { background: #eef2ff; color: #4338ca; font-size: 0.6rem; }
 
-    .badge-role {
-      background: #f0f0ee;
-      color: #888;
-      border: 1px solid #e0e0dc;
-    }
+    .activite { font-size: 0.75rem; color: #1a1a1a; line-height: 1.3; }
+    .programme { font-size: 0.65rem; color: #aaa; padding-left: 2px; line-height: 1.3; }
 
-    .badge-fixe {
-      background: #eef2ff;
-      color: #4338ca;
-      font-size: 0.6rem;
-    }
-
-    /* Texte activité */
-    .activite {
-      font-size: 0.75rem;
-      color: #1a1a1a;
-      line-height: 1.3;
-    }
-
-    /* Lien programme */
-    .programme {
-      font-size: 0.65rem;
-      color: #aaa;
-      padding-left: 2px;
-      line-height: 1.3;
-    }
-
-    /* État chargement / erreur */
-    .etat {
-      padding: 2rem;
-      text-align: center;
-      color: #888;
-      font-size: 0.85rem;
-    }
-
+    .etat { padding: 2rem; text-align: center; color: #888; font-size: 0.85rem; }
     .etat-erreur { color: #c0392b; }
-
-    /* Vue après-midi cachée par défaut */
     .vue-matin { display: contents; }
     .vue-aprem { display: none; }
 
     /* =============================================
+       MENU CONTEXTUEL
+    ============================================= */
+    .menu-contextuel {
+      position: fixed;
+      background: white;
+      border: 1px solid #e5e5e0;
+      border-radius: 10px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+      z-index: 200;
+      min-width: 180px;
+      overflow: hidden;
+      display: none;
+    }
+
+    .menu-contextuel.actif { display: block; }
+
+    .menu-titre {
+      padding: 8px 12px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: #aaa;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid #f0f0ee;
+      background: #fafaf8;
+    }
+
+    .menu-item {
+      padding: 9px 14px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      color: #1a1a1a;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: background 0.1s;
+    }
+
+    .menu-item:hover { background: #f5f5f0; }
+    .menu-item.danger { color: #c0392b; }
+    .menu-item.danger:hover { background: #fdf0f0; }
+    .menu-item-icone { font-size: 0.9rem; }
+
+    /* =============================================
        TIROIR RITUELS
     ============================================= */
-
-    /* Overlay sombre derrière le tiroir */
-    .tiroir-overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.25);
-      z-index: 100;
-    }
-
+    .tiroir-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.25); z-index: 100; }
     .tiroir-overlay.actif { display: block; }
 
-    /* Tiroir lui-même */
-    .tiroir {
-      position: fixed;
-      top: 0;
-      right: -480px;
-      width: 480px;
-      max-width: 95vw;
-      height: 100vh;
-      background: white;
-      z-index: 101;
-      display: flex;
-      flex-direction: column;
-      box-shadow: -4px 0 24px rgba(0,0,0,0.12);
-      transition: right 0.25s ease;
-    }
-
+    .tiroir { position: fixed; top: 0; right: -480px; width: 480px; max-width: 95vw; height: 100vh; background: white; z-index: 101; display: flex; flex-direction: column; box-shadow: -4px 0 24px rgba(0,0,0,0.12); transition: right 0.25s ease; }
     .tiroir.actif { right: 0; }
 
-    /* En-tête tiroir */
-    .tiroir-header {
-      padding: 1rem 1.25rem;
-      border-bottom: 1px solid #e5e5e0;
-      background: #f0ecf8;
-      display: flex;
+    .tiroir-header { padding: 1rem 1.25rem; border-bottom: 1px solid #e5e5e0; background: #f0ecf8; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+    .tiroir-header h3 { font-size: 0.95rem; font-weight: 600; color: #6b4fa0; }
+    .tiroir-header p { font-size: 0.75rem; color: #9b7ec8; margin-top: 2px; }
+
+    /* Bandeau mode sélection */
+    .tiroir-mode-selection {
+      background: #fff8e1;
+      border-bottom: 1px solid #fcd34d;
+      padding: 8px 1.25rem;
+      font-size: 0.78rem;
+      color: #856404;
+      display: none;
       align-items: center;
       justify-content: space-between;
       flex-shrink: 0;
     }
+    .tiroir-mode-selection.actif { display: flex; }
+    .btn-annuler-selection { font-size: 0.75rem; color: #856404; background: none; border: 1px solid #fcd34d; border-radius: 6px; padding: 3px 10px; cursor: pointer; }
+    .btn-annuler-selection:hover { background: #fef3c7; }
 
-    .tiroir-header h3 {
-      font-size: 0.95rem;
-      font-weight: 600;
-      color: #6b4fa0;
-    }
-
-    .tiroir-header p {
-      font-size: 0.75rem;
-      color: #9b7ec8;
-      margin-top: 2px;
-    }
-
-    .btn-fermer {
-      background: none;
-      border: none;
-      font-size: 1.2rem;
-      cursor: pointer;
-      color: #9b7ec8;
-      padding: 4px 8px;
-      border-radius: 6px;
-      line-height: 1;
-    }
-
+    .btn-fermer { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #9b7ec8; padding: 4px 8px; border-radius: 6px; line-height: 1; }
     .btn-fermer:hover { background: #e4d9f5; }
 
-    /* Sélecteur de semaine */
-    .tiroir-semaines {
-      display: flex;
-      gap: 6px;
-      padding: 10px 1.25rem;
-      border-bottom: 1px solid #e5e5e0;
-      overflow-x: auto;
-      flex-shrink: 0;
-      background: #fafaf8;
-    }
-
-    .btn-semaine {
-      padding: 5px 12px;
-      font-size: 0.78rem;
-      font-weight: 500;
-      border: 1px solid #ddd;
-      border-radius: 6px;
-      background: white;
-      color: #666;
-      cursor: pointer;
-      white-space: nowrap;
-      transition: all 0.15s;
-    }
-
-    .btn-semaine.actif {
-      background: #6b4fa0;
-      color: white;
-      border-color: #6b4fa0;
-    }
-
+    .tiroir-semaines { display: flex; gap: 6px; padding: 10px 1.25rem; border-bottom: 1px solid #e5e5e0; overflow-x: auto; flex-shrink: 0; background: #fafaf8; }
+    .btn-semaine { padding: 5px 12px; font-size: 0.78rem; font-weight: 500; border: 1px solid #ddd; border-radius: 6px; background: white; color: #666; cursor: pointer; white-space: nowrap; transition: all 0.15s; }
+    .btn-semaine.actif { background: #6b4fa0; color: white; border-color: #6b4fa0; }
     .btn-semaine:hover:not(.actif) { background: #f0ecf8; border-color: #c4b0e0; }
 
-    /* Badge lecture seule */
-    .badge-lecture {
-      font-size: 0.65rem;
-      background: #fff3cd;
-      color: #856404;
-      padding: 1px 6px;
-      border-radius: 4px;
-      margin-left: 6px;
-    }
+    /* En mode sélection, masquer le sélecteur de semaine */
+    .tiroir.mode-selection .tiroir-semaines { display: none; }
 
-    /* Corps du tiroir — scrollable */
-    .tiroir-corps {
-      flex: 1;
-      overflow-y: auto;
-      padding: 1rem 1.25rem;
-    }
+    .tiroir-lecture-seule { font-size: 0.75rem; color: #9b7ec8; background: #f0ecf8; border: 1px solid #c4b0e0; border-radius: 8px; padding: 8px 12px; margin-bottom: 12px; text-align: center; }
+    .tiroir-corps { flex: 1; overflow-y: auto; padding: 1rem 1.25rem; }
+    .tiroir-chargement { text-align: center; color: #aaa; font-size: 0.8rem; padding: 2rem; }
 
-    /* Section J1 / J2 / J3 / J4 */
-    .rituel-jour {
-      margin-bottom: 1rem;
-    }
-
-    .rituel-jour-titre {
-      font-size: 0.7rem;
-      font-weight: 700;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      color: #aaa;
-      margin-bottom: 6px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
+    .rituel-jour { margin-bottom: 1rem; }
+    .rituel-jour-titre { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #aaa; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
     .rituel-jour-titre.j1 { color: #6b4fa0; }
-    .rituel-jour-titre.j1::after {
-      content: 'Lundi remplaçant';
-      font-size: 0.62rem;
-      font-weight: 400;
-      background: #f0ecf8;
-      color: #9b7ec8;
-      padding: 1px 6px;
-      border-radius: 4px;
-      letter-spacing: 0;
-      text-transform: none;
-    }
+    .rituel-jour-titre.j1::after { content: 'Lundi remplaçant'; font-size: 0.62rem; font-weight: 400; background: #f0ecf8; color: #9b7ec8; padding: 1px 6px; border-radius: 4px; letter-spacing: 0; text-transform: none; }
 
-    /* Carte rituel */
-    .rituel-carte {
-      background: #fafaf8;
-      border: 1px solid #e5e5e0;
-      border-radius: 8px;
-      padding: 10px 12px;
-      margin-bottom: 6px;
-    }
+    /* Carte rituel — mode normal */
+    .rituel-carte { background: #fafaf8; border: 1px solid #e5e5e0; border-radius: 8px; padding: 10px 12px; margin-bottom: 6px; transition: border-color 0.15s; }
+    .rituel-carte.j1 { border-color: #c4b0e0; background: #f9f6fd; }
 
-    .rituel-carte.j1 {
-      border-color: #c4b0e0;
-      background: #f9f6fd;
-    }
+    /* Carte rituel — mode sélection */
+    .rituel-carte.selectionnable { cursor: pointer; }
+    .rituel-carte.selectionnable:hover { border-color: #6b4fa0; background: #f0ecf8; }
+    .rituel-carte.selectionnable.deplie { border-color: #6b4fa0; }
 
-    .rituel-carte-top {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 8px;
-      margin-bottom: 4px;
-    }
+    .rituel-carte-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
+    .rituel-carte-titre { font-size: 0.8rem; font-weight: 500; color: #1a1a1a; line-height: 1.3; flex: 1; }
+    .rituel-carte-desc { font-size: 0.72rem; color: #666; line-height: 1.4; margin-top: 4px; display: none; }
+    .rituel-carte.deplie .rituel-carte-desc { display: block; }
 
-    .rituel-carte-titre {
-      font-size: 0.8rem;
-      font-weight: 500;
-      color: #1a1a1a;
-      line-height: 1.3;
-      flex: 1;
-    }
+    .badge-intro { font-size: 0.62rem; font-weight: 700; background: #fff3cd; color: #856404; border: 1px solid #fcd34d; padding: 2px 6px; border-radius: 4px; white-space: nowrap; flex-shrink: 0; }
 
-    .rituel-carte-desc {
-      font-size: 0.72rem;
-      color: #666;
-      line-height: 1.4;
-      margin-top: 4px;
-    }
+    /* Bouton confirmer sélection */
+    .btn-confirmer { display: none; width: 100%; margin-top: 10px; padding: 9px; font-size: 0.82rem; font-weight: 600; background: #6b4fa0; color: white; border: none; border-radius: 8px; cursor: pointer; transition: background 0.15s; }
+    .btn-confirmer:hover { background: #5a3f8a; }
+    .rituel-carte.deplie .btn-confirmer { display: block; }
 
-    /* Badge introduction */
-    .badge-intro {
-      font-size: 0.62rem;
-      font-weight: 700;
-      background: #fff3cd;
-      color: #856404;
-      border: 1px solid #fcd34d;
-      padding: 2px 6px;
-      border-radius: 4px;
-      white-space: nowrap;
-      flex-shrink: 0;
-    }
-
-    /* Actions rituel (lecture seule masquées) */
-    .rituel-actions {
-      display: flex;
-      gap: 6px;
-      margin-top: 8px;
-      flex-wrap: wrap;
-    }
-
-    .btn-action {
-      font-size: 0.72rem;
-      padding: 4px 10px;
-      border-radius: 6px;
-      border: 1px solid #ddd;
-      background: white;
-      cursor: pointer;
-      color: #555;
-      transition: all 0.15s;
-    }
-
+    /* Actions rituel mode normal */
+    .rituel-actions { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+    .btn-action { font-size: 0.72rem; padding: 4px 10px; border-radius: 6px; border: 1px solid #ddd; background: white; cursor: pointer; color: #555; transition: all 0.15s; }
     .btn-action:hover { background: #f0f0ee; }
-
-    .btn-action.ajouter {
-      border-color: #2d6a4f;
-      color: #2d6a4f;
-    }
-
+    .btn-action.ajouter { border-color: #2d6a4f; color: #2d6a4f; }
     .btn-action.ajouter:hover { background: #e8f4ee; }
 
-    /* Message semaine non courante */
-    .tiroir-lecture-seule {
-      font-size: 0.75rem;
-      color: #9b7ec8;
-      background: #f0ecf8;
-      border: 1px solid #c4b0e0;
-      border-radius: 8px;
-      padding: 8px 12px;
-      margin-bottom: 12px;
-      text-align: center;
-    }
-
-    /* État chargement tiroir */
-    .tiroir-chargement {
-      text-align: center;
-      color: #aaa;
-      font-size: 0.8rem;
-      padding: 2rem;
-    }
-
-    /* Impression */
     @media print {
       body { background: white; padding: 0; }
-      .btn-retour { display: none; }
-      .btn-rituels { display: none; }
-      .toggle-group { display: none; }
+      .btn-retour, .btn-rituels, .toggle-group { display: none; }
       .semaine-wrapper { border: none; border-radius: 0; }
-      .tiroir { display: none; }
-      .tiroir-overlay { display: none; }
+      .tiroir, .tiroir-overlay, .menu-contextuel { display: none; }
     }
   </style>
 </head>
@@ -541,15 +218,27 @@
     <p id="sous-titre">Chargement…</p>
   </div>
   <div class="header-actions">
-    <button class="btn-rituels" onclick="ouvrirTiroir()">
-      📋 Rituels de la semaine
-    </button>
+    <button class="btn-rituels" onclick="ouvrirTiroir()">📋 Rituels de la semaine</button>
     <a href="index.html" class="btn-retour">← Retour</a>
   </div>
 </div>
 
 <div class="semaine-wrapper" id="semaine-wrapper">
   <div class="etat" id="etat-chargement">Chargement de la semaine…</div>
+</div>
+
+<!-- Menu contextuel -->
+<div class="menu-contextuel" id="menu-contextuel">
+  <div class="menu-titre" id="menu-titre">Rituel</div>
+  <div class="menu-item" id="menu-ajouter">
+    <span class="menu-item-icone">＋</span> Ajouter un rituel ici
+  </div>
+  <div class="menu-item" id="menu-remplacer">
+    <span class="menu-item-icone">⇄</span> Remplacer ce rituel
+  </div>
+  <div class="menu-item danger" id="menu-supprimer">
+    <span class="menu-item-icone">✕</span> Supprimer ce rituel
+  </div>
 </div>
 
 <!-- Overlay -->
@@ -565,10 +254,14 @@
     <button class="btn-fermer" onclick="fermerTiroir()">✕</button>
   </div>
 
-  <!-- Sélecteur semaines -->
-  <div class="tiroir-semaines" id="tiroir-semaines">
-    <!-- Généré dynamiquement -->
+  <!-- Bandeau mode sélection -->
+  <div class="tiroir-mode-selection" id="tiroir-mode-selection">
+    <span id="tiroir-mode-label">Choisissez un rituel à ajouter</span>
+    <button class="btn-annuler-selection" onclick="annulerSelection()">Annuler</button>
   </div>
+
+  <!-- Sélecteur semaines (masqué en mode sélection) -->
+  <div class="tiroir-semaines" id="tiroir-semaines"></div>
 
   <!-- Corps -->
   <div class="tiroir-corps" id="tiroir-corps">
@@ -580,59 +273,40 @@
 // =============================================
 // Configuration
 // =============================================
-const SUPABASE_URL = 'https://wqsprjlocuhandhvpytx.supabase.co';
+const JOURS_LABELS = { mardi: 'Mardi', jeudi: 'Jeudi', vendredi: 'Vendredi' };
 
-const JOURS_LABELS = {
-  mardi:    'Mardi',
-  jeudi:    'Jeudi',
-  vendredi: 'Vendredi'
-};
-
-// Mapping semaine app -> semaine MHM (offset -1, S1 rentrée = S0 MHM)
 const LABEL_SEMAINES = {
-  1: 'S1 — Rentrée',
-  2: 'S2 — MHM S1',
-  3: 'S3 — MHM S2',
-  4: 'S4 — MHM S3',
-  5: 'S5 — MHM S4',
-  6: 'S6 — MHM S5',
-  7: 'S7 — Tampon'
+  1: 'S1 — Rentrée', 2: 'S2 — MHM S1', 3: 'S3 — MHM S2',
+  4: 'S4 — MHM S3', 5: 'S5 — MHM S4', 6: 'S6 — MHM S5', 7: 'S7 — Tampon'
 };
 
-// Moments du matin dans l'ordre
 const ORDRE_MATIN = [
-  'Accueil',
-  'Rituels',
-  'Rituels maths PS',
-  'Ateliers rotation 1',
-  'Rituels maths GS',
-  'Ateliers rotation 2',
-  'Motricité',
-  'Récréation',
-  'Motricité / Littérature'
+  'Accueil', 'Rituels', 'Rituels maths PS', 'Ateliers rotation 1',
+  'Rituels maths GS', 'Ateliers rotation 2', 'Motricité', 'Récréation', 'Motricité / Littérature'
 ];
 
-// Moments de l'après-midi dans l'ordre
 const ORDRE_APREM = [
-  'Accueil',
-  'Sieste PS',
-  'Phonologie',
-  'Maths',
-  'Réveil PS',
-  'Sciences / Découverte',
-  'Récréation',
-  'Anglais / Arts'
+  'Accueil', 'Sieste PS', 'Phonologie', 'Maths', 'Réveil PS',
+  'Sciences / Découverte', 'Récréation', 'Anglais / Arts'
 ];
 
 // =============================================
 // État global
 // =============================================
 let etatApp = {
-  semaineId: null,        // UUID de la semaine courante affichée
-  numeroSemaine: null,    // numéro de la semaine courante (1-7)
-  periodeId: null,        // UUID de la période
-  semaineTiroir: null,    // numéro semaine sélectionnée dans le tiroir
-  reglesCache: {}         // cache { numeroSemaine: [regles] }
+  semaineId: null,
+  numeroSemaine: null,
+  semaineTiroir: null,
+  reglesCache: null,       // toutes les règles rituels P1
+  // Menu contextuel
+  menuCreneauId: null,     // UUID du créneau ciblé
+  menuJour: null,          // jour ciblé pour "ajouter"
+  menuMoment: null,        // moment ciblé pour "ajouter"
+  menuNiveau: null,        // niveau ciblé
+  menuHeureDeb: null,
+  menuHeureFin: null,
+  // Mode sélection tiroir
+  modeSelection: null      // 'ajouter' | 'remplacer' | null
 };
 
 // =============================================
@@ -641,28 +315,16 @@ let etatApp = {
 async function chargerSemaine() {
   const params = new URLSearchParams(window.location.search);
   const semaineId = params.get('id');
-
-  if (!semaineId) {
-    afficherErreur('Aucune semaine sélectionnée. Ajoutez ?id=UUID à l\'URL.');
-    return;
-  }
-
+  if (!semaineId) { afficherErreur('Aucune semaine sélectionnée. Ajoutez ?id=UUID à l\'URL.'); return; }
   etatApp.semaineId = semaineId;
 
   try {
     const res = await fetch(`/api/semaine?id=${semaineId}`);
-
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.error || `Erreur ${res.status}`);
-    }
-
+    if (!res.ok) { const err = await res.json(); throw new Error(err.error || `Erreur ${res.status}`); }
     const data = await res.json();
     etatApp.numeroSemaine = data.semaine.numero_semaine;
-    etatApp.periodeId = data.semaine.periode_id;
     afficherSemaine(data.semaine, data.creneaux);
     initialiserTiroir(data.semaine);
-
   } catch (err) {
     afficherErreur(`Impossible de charger la semaine : ${err.message}`);
   }
@@ -678,7 +340,6 @@ function afficherSemaine(semaine, creneaux) {
   jours.push('vendredi');
 
   const dateLundi = new Date(semaine.date_lundi);
-
   document.getElementById('sous-titre').textContent =
     `Année 2026-2027 — Période ${semaine.periode?.numero || '?'} — Semaine ${semaine.numero_semaine}`;
 
@@ -711,40 +372,36 @@ function afficherSemaine(semaine, creneaux) {
         <button class="toggle-btn" onclick="basculerVue('aprem', this)">Après-midi</button>
       </div>
     </div>
-
     <div class="grille" id="grille" style="--nb-jours: ${jours.length}">
       <div class="col-header col-horaire"></div>
       ${jours.map(j => `<div class="col-header">${labelJour(j)}</div>`).join('')}
-
       <div class="vue-matin" id="vue-matin">
         ${construireVue(parPeriode.matin, ORDRE_MATIN, jours, creneaux, 'matin')}
       </div>
-
       <div class="vue-aprem" id="vue-aprem">
         ${construireVue(parPeriode.aprem, ORDRE_APREM, jours, creneaux, 'aprem')}
       </div>
     </div>
   `;
+
+  // Fermer le menu au clic ailleurs
+  document.addEventListener('click', fermerMenuContextuel, { once: false });
 }
 
 // =============================================
-// Construction d'une vue (matin ou aprem)
+// Construction d'une vue
 // =============================================
 function construireVue(momentMap, ordre, jours, tousCreneaux, periode) {
   const momentsPresents = new Set([...ordre, ...Object.keys(momentMap)]);
   const momentsAffiches = ordre.filter(m => momentsPresents.has(m));
-
   for (const m of Object.keys(momentMap)) {
     if (!momentsAffiches.includes(m)) momentsAffiches.push(m);
   }
 
   let html = '';
-
   for (const moment of momentsAffiches) {
     const creneauxDuMoment = momentMap[moment] || {};
-
-    let heureDebut = '';
-    let heureFin = '';
+    let heureDebut = '', heureFin = '';
     const toutesLesCles = ['__plein__', ...jours];
     for (const cle of toutesLesCles) {
       const cs = creneauxDuMoment[cle];
@@ -754,56 +411,54 @@ function construireVue(momentMap, ordre, jours, tousCreneaux, periode) {
         break;
       }
     }
-
     if (!heureDebut) {
-      const horairesDefaut = getHorairesDefaut(moment, periode);
-      heureDebut = horairesDefaut.debut;
-      heureFin = horairesDefaut.fin;
+      const h = getHorairesDefaut(moment, periode);
+      heureDebut = h.debut; heureFin = h.fin;
     }
 
     const estPlein = estMomentPlein(moment);
+    const estRituel = moment.toLowerCase().includes('rituel');
 
-    html += `
-      <div class="cellule-horaire">
-        <div class="horaire-time">${heureDebut}${heureFin ? ' – ' + heureFin : ''}</div>
-        <div class="horaire-moment">${moment}</div>
-      </div>
-    `;
+    html += `<div class="cellule-horaire">
+      <div class="horaire-time">${heureDebut}${heureFin ? ' – ' + heureFin : ''}</div>
+      <div class="horaire-moment">${moment}</div>
+    </div>`;
 
     if (estPlein) {
       const cs = [];
-      if (creneauxDuMoment['__plein__']) {
-        cs.push(...creneauxDuMoment['__plein__']);
-      } else {
-        for (const jour of jours) {
-          if (creneauxDuMoment[jour]) { cs.push(...creneauxDuMoment[jour]); break; }
-        }
-      }
+      if (creneauxDuMoment['__plein__']) cs.push(...creneauxDuMoment['__plein__']);
+      else { for (const j of jours) { if (creneauxDuMoment[j]) { cs.push(...creneauxDuMoment[j]); break; } } }
       html += `<div class="cellule cellule-pleine">
-        ${cs.length > 0 ? renderGroupe(cs) : '<span style="color:#ccc;font-size:0.7rem;font-style:italic">—</span>'}
+        ${cs.length > 0 ? renderGroupe(cs, false) : '<span style="color:#ccc;font-size:0.7rem;font-style:italic">—</span>'}
       </div>`;
     } else {
       for (const jour of jours) {
         const cs = creneauxDuMoment[jour] || [];
         const estAtelier = moment.toLowerCase().includes('atelier');
         const classeExtra = estAtelier ? ' cellule-ateliers' : '';
-
         if (cs.length > 0) {
-          html += `<div class="cellule${classeExtra}">${renderGroupe(cs)}</div>`;
+          html += `<div class="cellule${classeExtra}">${renderGroupe(cs, estRituel, jour, moment, heureDebut, heureFin)}</div>`;
+        } else if (estRituel) {
+          // Cellule rituel vide — cliquable pour ajouter
+          html += `<div class="cellule${classeExtra}">
+            <div class="cellule-vide" style="cursor:pointer;border-color:#c4b0e0;color:#9b7ec8"
+              onclick="ouvrirMenuAjouter(event, null, '${jour}', '${moment}', null, '${heureDebut}', '${heureFin}')">
+              + Ajouter un rituel
+            </div>
+          </div>`;
         } else {
           html += `<div class="cellule${classeExtra} cellule-vide">À remplir</div>`;
         }
       }
     }
   }
-
   return html;
 }
 
 // =============================================
-// Rendu d'un groupe de créneaux dans une cellule
+// Rendu d'un groupe de créneaux
 // =============================================
-function renderGroupe(creneaux) {
+function renderGroupe(creneaux, cliquable, jour, moment, heureDebut, heureFin) {
   let html = '<div class="groupe">';
   let precedentNiveau = null;
 
@@ -812,37 +467,33 @@ function renderGroupe(creneaux) {
       html += '<hr class="separateur">';
     }
 
-    html += '<div class="entree"><div class="entree-top">';
+    const texte = c.activite || c.titre_fixe || (c.regle_id ? `[${c.regle_id}]` : '—');
 
-    if (c.niveau === 'PS') {
-      html += '<span class="badge badge-ps">PS</span>';
-    } else if (c.niveau === 'GS') {
-      html += '<span class="badge badge-gs">GS</span>';
-    } else if (c.niveau === 'PS+GS') {
-      html += '<span class="badge badge-ps">PS</span><span class="badge badge-gs">GS</span>';
+    if (cliquable && c.id) {
+      // Entrée rituel cliquable
+      const niv = c.niveau || '';
+      const hd = c.heure_debut?.substring(0,5) || heureDebut || '';
+      const hf = c.heure_fin?.substring(0,5) || heureFin || '';
+      html += `<div class="entree entree-cliquable"
+        onclick="ouvrirMenuContextuel(event, '${c.id}', '${jour || ''}', '${moment || ''}', '${niv}', '${hd}', '${hf}')">
+        <div class="entree-top">`;
+    } else {
+      html += '<div class="entree"><div class="entree-top">';
     }
 
-    if (c.type === 'fixe') {
-      html += '<span class="badge badge-fixe">FIXE</span>';
-    }
-
-    if (c.role) {
-      html += `<span class="badge badge-role">${c.role}</span>`;
-    }
-
-    const texte = c.activite || c.titre_fixe || (c.regle_id ? `[Règle : ${c.regle_id}]` : '—');
+    if (c.niveau === 'PS') html += '<span class="badge badge-ps">PS</span>';
+    else if (c.niveau === 'GS') html += '<span class="badge badge-gs">GS</span>';
+    else if (c.niveau === 'PS+GS') html += '<span class="badge badge-ps">PS</span><span class="badge badge-gs">GS</span>';
+    if (c.type === 'fixe') html += '<span class="badge badge-fixe">FIXE</span>';
+    if (c.role) html += `<span class="badge badge-role">${c.role}</span>`;
     html += `<span class="activite">${texte}</span>`;
-
     html += '</div>';
 
-    if (c.lien_programme) {
-      html += `<div class="programme">► ${c.lien_programme}</div>`;
+    if (cliquable && c.id) {
+      html += '<div class="entree-actions-hint">Cliquer pour modifier…</div>';
     }
-
-    if (c.notes) {
-      html += `<div class="programme" style="color:#888">${c.notes}</div>`;
-    }
-
+    if (c.lien_programme) html += `<div class="programme">► ${c.lien_programme}</div>`;
+    if (c.notes) html += `<div class="programme" style="color:#888">${c.notes}</div>`;
     html += '</div>';
     precedentNiveau = c.niveau;
   }
@@ -852,26 +503,96 @@ function renderGroupe(creneaux) {
 }
 
 // =============================================
-// TIROIR RITUELS
+// MENU CONTEXTUEL
 // =============================================
+function ouvrirMenuContextuel(event, creneauId, jour, moment, niveau, heureDeb, heureFin) {
+  event.stopPropagation();
 
+  etatApp.menuCreneauId = creneauId;
+  etatApp.menuJour = jour;
+  etatApp.menuMoment = moment;
+  etatApp.menuNiveau = niveau;
+  etatApp.menuHeureDeb = heureDeb;
+  etatApp.menuHeureFin = heureFin;
+
+  const menu = document.getElementById('menu-contextuel');
+  menu.classList.add('actif');
+
+  // Positionner le menu près du clic
+  const x = Math.min(event.clientX, window.innerWidth - 200);
+  const y = Math.min(event.clientY, window.innerHeight - 140);
+  menu.style.left = x + 'px';
+  menu.style.top = y + 'px';
+
+  // Configurer les actions
+  document.getElementById('menu-ajouter').onclick = (e) => {
+    e.stopPropagation();
+    fermerMenuContextuel();
+    ouvrirTiroirSelection('ajouter', jour, moment, null, heureDeb, heureFin);
+  };
+  document.getElementById('menu-remplacer').onclick = (e) => {
+    e.stopPropagation();
+    fermerMenuContextuel();
+    ouvrirTiroirSelection('remplacer', jour, moment, creneauId, heureDeb, heureFin);
+  };
+  document.getElementById('menu-supprimer').onclick = (e) => {
+    e.stopPropagation();
+    fermerMenuContextuel();
+    confirmerSuppression(creneauId);
+  };
+}
+
+function ouvrirMenuAjouter(event, creneauId, jour, moment, niveau, heureDeb, heureFin) {
+  event.stopPropagation();
+  etatApp.menuJour = jour;
+  etatApp.menuMoment = moment;
+  etatApp.menuNiveau = niveau;
+  etatApp.menuHeureDeb = heureDeb;
+  etatApp.menuHeureFin = heureFin;
+  ouvrirTiroirSelection('ajouter', jour, moment, null, heureDeb, heureFin);
+}
+
+function fermerMenuContextuel() {
+  document.getElementById('menu-contextuel').classList.remove('actif');
+}
+
+// =============================================
+// SUPPRESSION
+// =============================================
+async function confirmerSuppression(creneauId) {
+  if (!confirm('Supprimer ce rituel de la semaine ?')) return;
+
+  try {
+    const res = await fetch('/api/rituels-supprimer', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ creneau_id: creneauId })
+    });
+    if (!res.ok) { const e = await res.json(); throw new Error(e.error); }
+    // Recharger la semaine
+    location.reload();
+  } catch (err) {
+    alert(`Erreur lors de la suppression : ${err.message}`);
+  }
+}
+
+// =============================================
+// TIROIR — mode normal
+// =============================================
 function initialiserTiroir(semaine) {
-  // Générer les boutons semaines S1 à S7
   const conteneur = document.getElementById('tiroir-semaines');
   let html = '';
   for (let s = 1; s <= 7; s++) {
-    const label = s <= 6 ? `S${s}` : 'S7 Tampon';
     html += `<button class="btn-semaine${s === semaine.numero_semaine ? ' actif' : ''}"
       data-semaine="${s}"
-      onclick="selectionnerSemaineTiroir(${s}, this)">${label}</button>`;
+      onclick="selectionnerSemaineTiroir(${s}, this)">${s <= 6 ? 'S' + s : 'S7 Tampon'}</button>`;
   }
   conteneur.innerHTML = html;
-
-  // Charger d'emblée la semaine courante
   selectionnerSemaineTiroir(semaine.numero_semaine, conteneur.querySelector('.actif'));
 }
 
 function ouvrirTiroir() {
+  annulerSelection();
   document.getElementById('tiroir-overlay').classList.add('actif');
   document.getElementById('tiroir-rituels').classList.add('actif');
 }
@@ -879,87 +600,102 @@ function ouvrirTiroir() {
 function fermerTiroir() {
   document.getElementById('tiroir-overlay').classList.remove('actif');
   document.getElementById('tiroir-rituels').classList.remove('actif');
+  annulerSelection();
 }
 
 async function selectionnerSemaineTiroir(numeroSemaine, btnEl) {
-  // Mettre à jour le bouton actif
   document.querySelectorAll('.btn-semaine').forEach(b => b.classList.remove('actif'));
   if (btnEl) btnEl.classList.add('actif');
-
   etatApp.semaineTiroir = numeroSemaine;
   const estCourante = (numeroSemaine === etatApp.numeroSemaine);
+  document.getElementById('tiroir-sous-titre').textContent = LABEL_SEMAINES[numeroSemaine] || `Semaine ${numeroSemaine}`;
 
-  // Mettre à jour le sous-titre
-  document.getElementById('tiroir-sous-titre').textContent =
-    LABEL_SEMAINES[numeroSemaine] || `Semaine ${numeroSemaine}`;
-
-  // Afficher chargement
   const corps = document.getElementById('tiroir-corps');
   corps.innerHTML = '<div class="tiroir-chargement">Chargement des rituels…</div>';
 
   try {
-    const regles = await chargerReglesTiroir(numeroSemaine);
-    afficherReglesTiroir(regles, numeroSemaine, estCourante);
+    const regles = await chargerToutesRegles();
+    afficherReglesTiroir(regles, numeroSemaine, estCourante, false);
   } catch (err) {
     corps.innerHTML = `<div class="tiroir-chargement" style="color:#c0392b">Erreur : ${err.message}</div>`;
   }
 }
 
-async function chargerReglesTiroir(numeroSemaine) {
-  // Vérifier le cache
-  if (etatApp.reglesCache[numeroSemaine]) {
-    return etatApp.reglesCache[numeroSemaine];
-  }
+// =============================================
+// TIROIR — mode sélection
+// =============================================
+function ouvrirTiroirSelection(mode, jour, moment, creneauId, heureDeb, heureFin) {
+  etatApp.modeSelection = mode;
+  etatApp.menuJour = jour;
+  etatApp.menuMoment = moment;
+  etatApp.menuCreneauId = creneauId;
+  etatApp.menuHeureDeb = heureDeb;
+  etatApp.menuHeureFin = heureFin;
 
-  // S7 tampon — pas de règles MHM
-  if (numeroSemaine === 7) {
-    etatApp.reglesCache[7] = [];
-    return [];
-  }
+  const label = mode === 'ajouter'
+    ? `Choisissez un rituel à ajouter (${JOURS_LABELS[jour] || jour})`
+    : `Choisissez un rituel pour remplacer`;
 
-  // Appel à l'endpoint proxy Vercel
+  document.getElementById('tiroir-mode-label').textContent = label;
+  document.getElementById('tiroir-mode-selection').classList.add('actif');
+  document.getElementById('tiroir-rituels').classList.add('mode-selection');
+
+  document.getElementById('tiroir-overlay').classList.add('actif');
+  document.getElementById('tiroir-rituels').classList.add('actif');
+
+  // Charger tous les rituels en mode sélection (toutes semaines)
+  chargerToutesRegles().then(regles => {
+    afficherReglesTiroir(regles, null, true, true);
+  });
+}
+
+function annulerSelection() {
+  etatApp.modeSelection = null;
+  document.getElementById('tiroir-mode-selection').classList.remove('actif');
+  document.getElementById('tiroir-rituels').classList.remove('mode-selection');
+}
+
+// =============================================
+// Chargement des règles (cache global)
+// =============================================
+async function chargerToutesRegles() {
+  if (etatApp.reglesCache) return etatApp.reglesCache;
+
   const res = await fetch('/api/rituels?periode=1');
-
-  if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.error || `Erreur ${res.status}`);
-  }
-
+  if (!res.ok) { const e = await res.json(); throw new Error(e.error || `Erreur ${res.status}`); }
   const data = await res.json();
-
-  // Mettre en cache pour toutes les semaines (les règles sont les mêmes,
-  // c'est l'affichage qui varie selon la semaine sélectionnée)
-  for (let s = 1; s <= 6; s++) {
-    etatApp.reglesCache[s] = data.regles;
-  }
-
+  etatApp.reglesCache = data.regles;
   return data.regles;
 }
 
-
-function afficherReglesTiroir(regles, numeroSemaine, estCourante) {
+// =============================================
+// Affichage des règles dans le tiroir
+// =============================================
+function afficherReglesTiroir(regles, numeroSemaine, estCourante, modeSelection) {
   const corps = document.getElementById('tiroir-corps');
   let html = '';
 
-  // Bandeau lecture seule si semaine non courante
-  if (!estCourante) {
+  if (!estCourante && !modeSelection) {
     html += `<div class="tiroir-lecture-seule">
       👁 Consultation uniquement — les modifications ne sont disponibles que sur la semaine en cours
     </div>`;
   }
 
-  // Filtrer les règles pertinentes pour cette semaine :
-  // - quotidiens : toujours affichés
-  // - semaine_mhm null + jour_mhm non null : récurrents toutes semaines (ex: mascotte PS)
-  // - semaine_mhm === numeroSemaine : spécifiques à cette semaine
-  const reglesFiltrees = regles.filter(r => {
-    if (r.frequence_type === 'quotidien') return true;
-    if (r.jour_mhm !== null && r.semaine_mhm === null) return true;
-    if (r.semaine_mhm === numeroSemaine) return true;
-    return false;
-  });
+  // Filtrer selon le mode
+  let reglesFiltrees;
+  if (modeSelection) {
+    // Mode sélection : tous les rituels de la période
+    reglesFiltrees = regles;
+  } else {
+    // Mode normal : rituels de la semaine sélectionnée
+    reglesFiltrees = regles.filter(r => {
+      if (r.frequence_type === 'quotidien') return true;
+      if (r.jour_mhm !== null && r.semaine_mhm === null) return true;
+      if (r.semaine_mhm === numeroSemaine) return true;
+      return false;
+    });
+  }
 
-  // Séparer par jour
   const quotidiens = reglesFiltrees.filter(r => r.frequence_type === 'quotidien');
   const parJour = { 1: [], 2: [], 3: [], 4: [] };
   for (const r of reglesFiltrees) {
@@ -968,166 +704,165 @@ function afficherReglesTiroir(regles, numeroSemaine, estCourante) {
     }
   }
 
-  // Rituels quotidiens
-  if (quotidiens.length > 0) {
-    html += `<div class="rituel-jour">
-      <div class="rituel-jour-titre">Chaque jour</div>`;
-    for (const r of quotidiens) {
-      html += renderCarteTiroir(r, false, estCourante);
-    }
-    html += `</div>`;
-  }
+  const rendreSection = (titre, classeJ1, items) => {
+    if (!items.length) return '';
+    let s = `<div class="rituel-jour"><div class="rituel-jour-titre${classeJ1 ? ' j1' : ''}">${titre}</div>`;
+    for (const r of items) s += renderCarteTiroir(r, classeJ1, modeSelection);
+    s += '</div>';
+    return s;
+  };
 
-  // J1 — Lundi remplaçant
-  if (parJour[1].length > 0) {
-    html += `<div class="rituel-jour">
-      <div class="rituel-jour-titre j1">Jour 1 — Lundi</div>`;
-    for (const r of parJour[1]) {
-      html += renderCarteTiroir(r, true, estCourante);
-    }
-    html += `</div>`;
-  }
-
-  // J2 — Mardi
-  if (parJour[2].length > 0) {
-    html += `<div class="rituel-jour">
-      <div class="rituel-jour-titre">Jour 2 — Mardi</div>`;
-    for (const r of parJour[2]) {
-      html += renderCarteTiroir(r, false, estCourante);
-    }
-    html += `</div>`;
-  }
-
-  // J3 — Jeudi
-  if (parJour[3].length > 0) {
-    html += `<div class="rituel-jour">
-      <div class="rituel-jour-titre">Jour 3 — Jeudi</div>`;
-    for (const r of parJour[3]) {
-      html += renderCarteTiroir(r, false, estCourante);
-    }
-    html += `</div>`;
-  }
-
-  // J4 — Vendredi
-  if (parJour[4].length > 0) {
-    html += `<div class="rituel-jour">
-      <div class="rituel-jour-titre">Jour 4 — Vendredi</div>`;
-    for (const r of parJour[4]) {
-      html += renderCarteTiroir(r, false, estCourante);
-    }
-    html += `</div>`;
-  }
+  if (quotidiens.length) html += rendreSection('Chaque jour', false, quotidiens);
+  html += rendreSection('Jour 1 — Lundi', true, parJour[1]);
+  html += rendreSection('Jour 2 — Mardi', false, parJour[2]);
+  html += rendreSection('Jour 3 — Jeudi', false, parJour[3]);
+  html += rendreSection('Jour 4 — Vendredi', false, parJour[4]);
 
   if (!html || html.indexOf('rituel-carte') === -1) {
-    html += `<div class="tiroir-chargement">Aucun rituel MHM pour cette semaine.</div>`;
+    html = '<div class="tiroir-chargement">Aucun rituel MHM pour cette semaine.</div>';
   }
 
   corps.innerHTML = html;
 }
-function renderCarteTiroir(regle, estJ1, estCourante) {
-  // Extraire un titre court depuis la description (avant le premier ":")
-  const titreMatch = regle.description.match(/^([^:]+)/);
-  const titre = titreMatch ? titreMatch[1].trim() : regle.id;
-  const desc = regle.description;
 
-  // Badge niveau
+// =============================================
+// Carte rituel dans le tiroir
+// =============================================
+function renderCarteTiroir(regle, estJ1, modeSelection) {
+  const titreMatch = regle.description.match(/^([^(]+)/);
+  const titre = titreMatch ? titreMatch[1].trim().replace(/\s*-\s*$/, '') : regle.id;
+
   let badgeNiveau = '';
-  if (regle.niveau === 'PS') {
-    badgeNiveau = '<span class="badge badge-ps">PS</span>';
-  } else if (regle.niveau === 'GS') {
-    badgeNiveau = '<span class="badge badge-gs">GS</span>';
-  } else if (regle.niveau === 'PS+GS') {
-    badgeNiveau = '<span class="badge badge-ps">PS</span><span class="badge badge-gs">GS</span>';
-  }
+  if (regle.niveau === 'PS') badgeNiveau = '<span class="badge badge-ps">PS</span>';
+  else if (regle.niveau === 'GS') badgeNiveau = '<span class="badge badge-gs">GS</span>';
+  else if (regle.niveau === 'PS+GS') badgeNiveau = '<span class="badge badge-ps">PS</span><span class="badge badge-gs">GS</span>';
 
-  // Badge introduction
-  const badgeIntro = regle.est_introduction
-    ? '<span class="badge-intro">⚠ Introduction</span>'
-    : '';
+  const badgeIntro = regle.est_introduction ? '<span class="badge-intro">⚠ Intro</span>' : '';
 
-  // Actions — uniquement si semaine courante
-  let actions = '';
-  if (estCourante) {
-    const idSafe = regle.id.replace(/'/g, '');
-    actions = `<div class="rituel-actions">
-      <button class="btn-action ajouter" data-regle-id="${idSafe}" onclick="ajouterRituel('${idSafe}')">+ Ajouter à un jour</button>
+  if (modeSelection) {
+    // Mode sélection : carte compacte, clic déplie + bouton confirmer
+    const idSafe = regle.id;
+    return `<div class="rituel-carte${estJ1 ? ' j1' : ''} selectionnable" id="carte-${idSafe}"
+      onclick="toggleCarteSelection('${idSafe}')">
+      <div class="rituel-carte-top">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          ${badgeNiveau}
+          <span class="rituel-carte-titre">${titre}</span>
+        </div>
+        ${badgeIntro}
+      </div>
+      <div class="rituel-carte-desc">${regle.description}</div>
+      <button class="btn-confirmer" onclick="confirmerSelectionRituel(event, '${idSafe}')">
+        ✓ Choisir ce rituel
+      </button>
+    </div>`;
+  } else {
+    // Mode normal : carte avec description visible + actions
+    return `<div class="rituel-carte${estJ1 ? ' j1' : ''}">
+      <div class="rituel-carte-top">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          ${badgeNiveau}
+          <span class="rituel-carte-titre">${titre}</span>
+        </div>
+        ${badgeIntro}
+      </div>
+      <div class="rituel-carte-desc" style="display:block">${regle.description}</div>
     </div>`;
   }
+}
 
-  return `<div class="rituel-carte${estJ1 ? ' j1' : ''}">
-    <div class="rituel-carte-top">
-      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-        ${badgeNiveau}
-        <span class="rituel-carte-titre">${titre}</span>
-      </div>
-      ${badgeIntro}
-    </div>
-    <div class="rituel-carte-desc">${desc}</div>
-    ${actions}
-  </div>`;
+function toggleCarteSelection(regleId) {
+  const carte = document.getElementById(`carte-${regleId}`);
+  if (!carte) return;
+  // Replier toutes les autres
+  document.querySelectorAll('.rituel-carte.selectionnable.deplie').forEach(c => {
+    if (c !== carte) c.classList.remove('deplie');
+  });
+  carte.classList.toggle('deplie');
 }
 
 // =============================================
-// Actions tiroir — ajouter un rituel à un jour
-// (placeholder — dialogue de sélection à implémenter)
+// Confirmer sélection — ajouter ou remplacer
 // =============================================
-function ajouterRituel(regleId) {
-  // TODO — ouvrir un sous-dialogue : choisir le jour cible (Mardi/Jeudi/Vendredi)
-  // puis appeler l'API pour insérer dans maternelle_creneaux
-  alert(`Fonctionnalité en cours : ajouter le rituel ${regleId} à un jour de la semaine courante.`);
+async function confirmerSelectionRituel(event, regleId) {
+  event.stopPropagation();
+
+  const mode = etatApp.modeSelection;
+  const semaineId = etatApp.semaineId;
+
+  try {
+    if (mode === 'ajouter') {
+      const res = await fetch('/api/rituels-ajouter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          semaine_id: semaineId,
+          jour: etatApp.menuJour,
+          moment: etatApp.menuMoment,
+          niveau: etatApp.menuNiveau || 'PS+GS',
+          regle_id: regleId,
+          heure_debut: etatApp.menuHeureDeb ? etatApp.menuHeureDeb + ':00' : '08:35:00',
+          heure_fin: etatApp.menuHeureFin ? etatApp.menuHeureFin + ':00' : '08:40:00'
+        })
+      });
+      if (!res.ok) { const e = await res.json(); throw new Error(e.error); }
+
+    } else if (mode === 'remplacer') {
+      const res = await fetch('/api/rituels-remplacer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          creneau_id: etatApp.menuCreneauId,
+          regle_id: regleId
+        })
+      });
+      if (!res.ok) { const e = await res.json(); throw new Error(e.error); }
+    }
+
+    fermerTiroir();
+    location.reload();
+
+  } catch (err) {
+    alert(`Erreur : ${err.message}`);
+  }
 }
 
 // =============================================
 // Helpers
 // =============================================
-
 function estMomentPlein(moment) {
-  const pleins = ['Accueil', 'Récréation', 'Sieste PS', 'Réveil PS'];
-  return pleins.some(p => moment.includes(p));
+  return ['Accueil', 'Récréation', 'Sieste PS', 'Réveil PS'].some(p => moment.includes(p));
 }
 
-function getHorairesDefaut(moment, periode) {
-  const defauts = {
-    'Accueil':                 { debut: '08:20', fin: '08:35' },
-    'Rituels':                 { debut: '08:35', fin: '08:40' },
-    'Rituels maths PS':        { debut: '08:40', fin: '08:50' },
-    'Ateliers rotation 1':     { debut: '08:50', fin: '09:20' },
-    'Rituels maths GS':        { debut: '09:20', fin: '09:30' },
-    'Ateliers rotation 2':     { debut: '09:30', fin: '10:00' },
-    'Motricité':               { debut: '10:00', fin: '10:30' },
-    'Récréation':              { debut: '10:30', fin: '11:00' },
+function getHorairesDefaut(moment) {
+  const d = {
+    'Accueil': { debut: '08:20', fin: '08:35' }, 'Rituels': { debut: '08:35', fin: '08:40' },
+    'Rituels maths PS': { debut: '08:40', fin: '08:50' }, 'Ateliers rotation 1': { debut: '08:50', fin: '09:20' },
+    'Rituels maths GS': { debut: '09:20', fin: '09:30' }, 'Ateliers rotation 2': { debut: '09:30', fin: '10:00' },
+    'Motricité': { debut: '10:00', fin: '10:30' }, 'Récréation': { debut: '10:30', fin: '11:00' },
     'Motricité / Littérature': { debut: '11:00', fin: '11:30' },
-    'Sieste PS':               { debut: '13:30', fin: '14:30' },
-    'Phonologie':              { debut: '13:30', fin: '14:00' },
-    'Maths':                   { debut: '14:00', fin: '14:30' },
-    'Réveil PS':               { debut: '14:30', fin: '15:00' },
-    'Sciences / Découverte':   { debut: '15:00', fin: '15:30' },
-    'Anglais / Arts':          { debut: '16:00', fin: '16:30' },
+    'Sieste PS': { debut: '13:30', fin: '14:30' }, 'Phonologie': { debut: '13:30', fin: '14:00' },
+    'Maths': { debut: '14:00', fin: '14:30' }, 'Réveil PS': { debut: '14:30', fin: '15:00' },
+    'Sciences / Découverte': { debut: '15:00', fin: '15:30' }, 'Anglais / Arts': { debut: '16:00', fin: '16:30' }
   };
-  return defauts[moment] || { debut: '', fin: '' };
+  return d[moment] || { debut: '', fin: '' };
 }
 
 function basculerVue(vue, btn) {
   const matin = document.getElementById('vue-matin');
   const aprem = document.getElementById('vue-aprem');
-  const btns = document.querySelectorAll('.toggle-btn');
-
-  btns.forEach(b => b.classList.remove('actif'));
+  document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('actif'));
   btn.classList.add('actif');
-
-  if (vue === 'matin') {
-    matin.style.display = 'contents';
-    aprem.style.display = 'none';
-  } else {
-    matin.style.display = 'none';
-    aprem.style.display = 'contents';
-  }
+  matin.style.display = vue === 'matin' ? 'contents' : 'none';
+  aprem.style.display = vue === 'aprem' ? 'contents' : 'none';
 }
 
 function afficherErreur(msg) {
-  document.getElementById('semaine-wrapper').innerHTML =
-    `<div class="etat etat-erreur">⚠️ ${msg}</div>`;
+  document.getElementById('semaine-wrapper').innerHTML = `<div class="etat etat-erreur">⚠️ ${msg}</div>`;
 }
+
+// Fermer le menu contextuel au clic ailleurs
+document.addEventListener('click', () => fermerMenuContextuel());
 
 // =============================================
 // Lancement

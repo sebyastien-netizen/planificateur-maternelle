@@ -18,7 +18,41 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Méthode non autorisée' });
   }
 
-  const { semaine_id } = req.body;
+  const { semaine_id, tout } = req.body;
+
+  // Mode batch — pré-remplit toutes les semaines P1
+  if (tout) {
+    const SEMAINES_P1 = [
+      'a4338c80-ee36-4b56-92a9-4eacca4c096a', // S1
+      '1710aaea-db55-4f55-bf75-dbd5258ead88', // S2
+      'f7c36cd8-3a6e-4317-962c-5d8edc16a888', // S3
+      '9b0b5d89-55e3-41f4-bda4-6a3fd89c0eb4', // S4
+      'a8eff5fd-aa1d-4260-bb46-ddbe2c442d91', // S5
+      '91832461-1a4a-431f-9b04-0659588567a7', // S6
+      '047ff3bd-d389-48ff-8d2c-7e21fb1a14a7'  // S7
+    ];
+
+    const resultats = [];
+    for (const id of SEMAINES_P1) {
+      const host = req.headers.host;
+      const protocol = host.includes('localhost') ? 'http' : 'https';
+      const r = await fetch(`${protocol}://${host}/api/marie-preremplir`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ semaine_id: id })
+      });
+      const data = await r.json();
+      if (r.status === 409) {
+        resultats.push({ semaine_id: id, statut: 'deja remplie' });
+      } else if (!r.ok) {
+        resultats.push({ semaine_id: id, statut: 'erreur', detail: data.error });
+      } else {
+        resultats.push({ semaine_id: id, statut: 'ok', creneaux_inseres: data.creneaux_inseres });
+      }
+    }
+    return res.status(200).json({ resultats });
+  }
+
   if (!semaine_id) {
     return res.status(400).json({ error: 'Paramètre semaine_id manquant' });
   }

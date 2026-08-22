@@ -162,8 +162,7 @@
     .btn-semaine.actif { background: #6b4fa0; color: white; border-color: #6b4fa0; }
     .btn-semaine:hover:not(.actif) { background: #f0ecf8; border-color: #c4b0e0; }
 
-    /* En mode sélection, masquer le sélecteur de semaine */
-    .tiroir.mode-selection .tiroir-semaines { display: none; }
+
 
     .tiroir-lecture-seule { font-size: 0.75rem; color: #9b7ec8; background: #f0ecf8; border: 1px solid #c4b0e0; border-radius: 8px; padding: 8px 12px; margin-bottom: 12px; text-align: center; }
     .tiroir-corps { flex: 1; overflow-y: auto; padding: 1rem 1.25rem; }
@@ -608,14 +607,20 @@ async function selectionnerSemaineTiroir(numeroSemaine, btnEl) {
   if (btnEl) btnEl.classList.add('actif');
   etatApp.semaineTiroir = numeroSemaine;
   const estCourante = (numeroSemaine === etatApp.numeroSemaine);
-  document.getElementById('tiroir-sous-titre').textContent = LABEL_SEMAINES[numeroSemaine] || `Semaine ${numeroSemaine}`;
+
+  if (!etatApp.modeSelection) {
+    document.getElementById('tiroir-sous-titre').textContent =
+      LABEL_SEMAINES[numeroSemaine] || `Semaine ${numeroSemaine}`;
+  }
 
   const corps = document.getElementById('tiroir-corps');
   corps.innerHTML = '<div class="tiroir-chargement">Chargement des rituels…</div>';
 
   try {
     const regles = await chargerToutesRegles();
-    afficherReglesTiroir(regles, numeroSemaine, estCourante, false);
+    // En mode sélection : filtrer par semaine sélectionnée MAIS permettre la sélection
+    const enModeSelection = !!etatApp.modeSelection;
+    afficherReglesTiroir(regles, numeroSemaine, estCourante, enModeSelection);
   } catch (err) {
     corps.innerHTML = `<div class="tiroir-chargement" style="color:#c0392b">Erreur : ${err.message}</div>`;
   }

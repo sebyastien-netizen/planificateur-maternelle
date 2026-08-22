@@ -149,19 +149,21 @@ export default async function handler(req, res) {
       }
     }
 
-    // --- RITUELS QUOTIDIENS → moment "Rituels", pleine largeur ---
-    // Insérés une seule fois (jour=null) car identiques chaque jour
-    for (const regle of rituelsQuotidiens) {
-      creneauxAInserer.push(makeCreneau({
-        jour:           null,
-        heure_debut:    '08:35',
-        heure_fin:      '08:40',
-        moment:         'Rituels',
-        niveau:         regle.niveau,
-        periode:        'matin',
-        regle_id:       regle.id,
-        lien_programme: regle.sous_domaine_id
-      }));
+    // --- RITUELS QUOTIDIENS → moment "Rituels", par colonne jour par jour ---
+    // Insérés pour chaque jour actif pour permettre variation future
+    for (const jour of jours) {
+      for (const regle of rituelsQuotidiens) {
+        creneauxAInserer.push(makeCreneau({
+          jour,
+          heure_debut:    '08:35',
+          heure_fin:      '08:40',
+          moment:         'Rituels',
+          niveau:         regle.niveau,
+          periode:        'matin',
+          regle_id:       regle.id,
+          lien_programme: regle.sous_domaine_id
+        }));
+      }
     }
 
     // --- RITUELS DU JOUR → par colonne selon J2/J3/J4 ---

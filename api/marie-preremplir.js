@@ -140,12 +140,17 @@ export default async function handler(req, res) {
     const template = await resTemplate.json();
 
     // 7. Séparer les règles
+    const numeroSemaineApp   = semaine.numero_semaine;
     const reglesQuotidiennes = regles.filter(r => r.frequence_type === 'quotidien');
     const reglesHebdo        = regles.filter(r => r.frequence_type === 'hebdomadaire');
     const rituelsJ1          = reglesHebdo.filter(r => r.frequence_valeur === 1);
 
-    // Rituels quotidiens → moment "Rituels" (CHAQUE JOUR, pleine largeur)
-    const rituelsQuotidiens = reglesQuotidiennes;
+    // Rituels quotidiens :
+    // - semaine_mhm null → s'appliquent toutes les semaines
+    // - semaine_mhm non null → s'appliquent uniquement à cette semaine
+    const rituelsQuotidiens = reglesQuotidiennes.filter(r =>
+      r.semaine_mhm === null || r.semaine_mhm === numeroSemaineApp
+    );
 
     // Rituels du jour → moment "Rituels maths PS" ou "Rituels maths GS" selon niveau
     // PS : 08h40–08h50 · GS : 09h20–09h30

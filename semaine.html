@@ -643,21 +643,14 @@ function ouvrirTiroirSelection(mode, jour, moment, creneauId, heureDeb, heureFin
 
   document.getElementById('tiroir-mode-label').textContent = label;
   document.getElementById('tiroir-mode-selection').classList.add('actif');
-  document.getElementById('tiroir-rituels').classList.add('mode-selection');
+  document.getElementById('tiroir-rituels').classList.remove('mode-selection');
 
   document.getElementById('tiroir-overlay').classList.add('actif');
   document.getElementById('tiroir-rituels').classList.add('actif');
 
-  // Charger TOUS les rituels sans filtre de semaine
-  const corps = document.getElementById('tiroir-corps');
-  corps.innerHTML = '<div class="tiroir-chargement">Chargement des rituels…</div>';
-
-  chargerToutesRegles().then(regles => {
-    // modeSelection=true → affiche tout, sans filtre semaine
-    afficherReglesTiroir(regles, null, true, true);
-  }).catch(err => {
-    corps.innerHTML = `<div class="tiroir-chargement" style="color:#c0392b">Erreur : ${err.message}</div>`;
-  });
+  // Charger la semaine courante par défaut
+  const btnCourant = document.querySelector(`.btn-semaine[data-semaine="${etatApp.numeroSemaine}"]`);
+  selectionnerSemaineTiroir(etatApp.numeroSemaine, btnCourant);
 }
 
 function annulerSelection() {
@@ -692,13 +685,12 @@ function afficherReglesTiroir(regles, numeroSemaine, estCourante, modeSelection)
     </div>`;
   }
 
-  // Filtrer selon le mode
+  // Filtrer selon la semaine sélectionnée — toujours, mode sélection ou non
   let reglesFiltrees;
-  if (modeSelection) {
-    // Mode sélection : tous les rituels de la période
+  if (numeroSemaine === null) {
+    // Pas de filtre — afficher tout (cas non utilisé normalement)
     reglesFiltrees = regles;
   } else {
-    // Mode normal : rituels de la semaine sélectionnée
     reglesFiltrees = regles.filter(r => {
       if (r.frequence_type === 'quotidien') return true;
       if (r.jour_mhm !== null && r.semaine_mhm === null) return true;

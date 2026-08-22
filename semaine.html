@@ -911,38 +911,29 @@ async function chargerReglesTiroir(numeroSemaine) {
     return etatApp.reglesCache[numeroSemaine];
   }
 
-  // Calculer le numéro MHM (offset -1, S7 tampon = pas de règles MHM)
-  const numeroMHM = numeroSemaine - 1; // S1 app = S0 MHM, S2 app = S1 MHM...
-
-  // Requête Supabase REST — rituels MHM P1 uniquement
-  // Pour S7 tampon : on retourne tableau vide
+  // S7 tampon — pas de règles MHM
   if (numeroSemaine === 7) {
     etatApp.reglesCache[7] = [];
     return [];
   }
 
-  // Rituels quotidiens (j1..j4 inclus) + rituels par jour (jour_mhm non null)
-  // On récupère tous les rituels de la période 1 et on filtre côté JS selon la semaine
-  // Les rituels quotidiens s'appliquent toutes semaines
-  // Les rituels spécifiques : on les montre tous (l'enseignante voit la progression)
-  const url = `${SUPABASE_URL}/rest/v1/maternelle_regles` +
-    `?select=id,niveau,description,frequence_type,frequence_valeur,jour_mhm,est_introduction` +
-    `&periode=eq.1` +
-    `&or=(frequence_type.eq.quotidien,jour_mhm.not.is.null)` +
-    `&order=niveau,jour_mhm,id`;
+  // Appel à l'endpoint proxy Vercel
+  const res = await fetch('/api/rituels?periode=1');
 
-  const res = await fetch(url, {
-    headers: {
-      'apikey': await getAnonKey(),
-      'Authorization': `Bearer ${await getAnonKey()}`
-    }
-  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error || `Erreur ${res.status}`);
+  }
 
-  if (!res.ok) throw new Error(`Supabase ${res.status}`);
-  const regles = await res.json();
+  const data = await res.json();
 
-  etatApp.reglesCache[numeroSemaine] = regles;
-  return regles;
+  // Mettre en cache pour toutes les semaines (les règles sont les mêmes,
+  // c'est l'affichage qui varie selon la semaine sélectionnée)
+  for (let s = 1; s <= 6; s++) {
+    etatApp.reglesCache[s] = data.regles;
+  }
+
+  return data.regles;
 }
 
 async function getAnonKey() {

@@ -214,10 +214,6 @@ module.exports = async function handler(req, res) {
     }
 
     // --- RITUELS DU JOUR → par colonne selon J2/J3/J4 ---
-    // Mapping semaine app → semaine MHM (offset -1)
-    // S1 rentrée = pas de semaine MHM spécifique
-    // S2 app = semaine_mhm 2, S3 app = semaine_mhm 3, etc.
-    const numeroSemaineApp = semaine.numero_semaine;
 
     for (const jour of jours) {
       const numJourMHM = JOUR_TO_MHM[jour];

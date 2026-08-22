@@ -201,6 +201,44 @@
     .btn-action.ajouter { border-color: #2d6a4f; color: #2d6a4f; }
     .btn-action.ajouter:hover { background: #e8f4ee; }
 
+       /* Navigation semaines */
+    .nav-semaines {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-nav {
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 5px 12px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      color: #2d6a4f;
+      transition: all 0.15s;
+      line-height: 1;
+    }
+
+    .btn-nav:hover:not([disabled]) {
+      background: #e8f4ee;
+      border-color: #2d6a4f;
+    }
+
+    .btn-nav[disabled] {
+      color: #ccc;
+      cursor: default;
+      border-color: #eee;
+    }
+
+    .nav-semaines-label {
+      font-size: 0.78rem;
+      color: #666;
+      font-weight: 500;
+      min-width: 90px;
+      text-align: center;
+    }
+
     @media print {
       body { background: white; padding: 0; }
       .btn-retour, .btn-rituels, .toggle-group { display: none; }
@@ -289,6 +327,17 @@ const ORDRE_APREM = [
   'Sciences / Découverte', 'Récréation', 'Anglais / Arts'
 ];
 
+// Semaines P1 dans l'ordre — UUID Supabase
+const SEMAINES_P1 = [
+  { id: 'a4338c80-ee36-4b56-92a9-4eacca4c096a', numero: 1, label: 'S1 — Rentrée' },
+  { id: '1710aaea-db55-4f55-bf75-dbd5258ead88', numero: 2, label: 'S2 — MHM S1' },
+  { id: 'f7c36cd8-3a6e-4317-962c-5d8edc16a888', numero: 3, label: 'S3 — MHM S2' },
+  { id: '9b0b5d89-55e3-41f4-bda4-6a3fd89c0eb4', numero: 4, label: 'S4 — MHM S3' },
+  { id: 'a8eff5fd-aa1d-4260-bb46-ddbe2c442d91', numero: 5, label: 'S5 — MHM S4' },
+  { id: '91832461-1a4a-431f-9b04-0659588567a7', numero: 6, label: 'S6 — MHM S5' },
+  { id: '047ff3bd-d389-48ff-8d2c-7e21fb1a14a7', numero: 7, label: 'S7 — Tampon' }
+];
+
 // =============================================
 // État global
 // =============================================
@@ -366,9 +415,12 @@ function afficherSemaine(semaine, creneaux) {
         <h2>Semaine ${semaine.numero_semaine} — P${semaine.periode?.numero || '?'}</h2>
         <p>${jours.length} jours de classe · ${jours.map(j => JOURS_LABELS[j]).join(' / ')}</p>
       </div>
-      <div class="toggle-group">
-        <button class="toggle-btn actif" onclick="basculerVue('matin', this)">Matin</button>
-        <button class="toggle-btn" onclick="basculerVue('aprem', this)">Après-midi</button>
+      <div style="display:flex;align-items:center;gap:10px">
+        ${construireNavSemaines(semaine.numero_semaine)}
+        <div class="toggle-group">
+          <button class="toggle-btn actif" onclick="basculerVue('matin', this)">Matin</button>
+          <button class="toggle-btn" onclick="basculerVue('aprem', this)">Après-midi</button>
+        </div>
       </div>
     </div>
     <div class="grille" id="grille" style="--nb-jours: ${jours.length}">
@@ -866,6 +918,34 @@ function afficherErreur(msg) {
 
 // Fermer le menu contextuel au clic ailleurs
 document.addEventListener('click', () => fermerMenuContextuel());
+
+// =============================================
+// Navigation entre semaines
+// =============================================
+function construireNavSemaines(numeroActuel) {
+  const idx = SEMAINES_P1.findIndex(s => s.numero === numeroActuel);
+  const precedente = idx > 0 ? SEMAINES_P1[idx - 1] : null;
+  const suivante = idx < SEMAINES_P1.length - 1 ? SEMAINES_P1[idx + 1] : null;
+  const courante = SEMAINES_P1[idx];
+
+  const btnPrev = precedente
+    ? `<button class="btn-nav" onclick="naviguerSemaine('${precedente.id}')" title="${precedente.label}">←</button>`
+    : `<button class="btn-nav" disabled>←</button>`;
+
+  const btnNext = suivante
+    ? `<button class="btn-nav" onclick="naviguerSemaine('${suivante.id}')" title="${suivante.label}">→</button>`
+    : `<button class="btn-nav" disabled>→</button>`;
+
+  return `<div class="nav-semaines">
+    ${btnPrev}
+    <span class="nav-semaines-label">${courante?.label || ''}</span>
+    ${btnNext}
+  </div>`;
+}
+
+function naviguerSemaine(semaineId) {
+  window.location.href = `semaine.html?id=${semaineId}`;
+}
 
 // =============================================
 // Lancement

@@ -231,13 +231,19 @@
       border-color: #eee;
     }
 
-    .nav-semaines-label {
+    .nav-select {
       font-size: 0.78rem;
-      color: #666;
+      color: #1a1a1a;
       font-weight: 500;
-      min-width: 90px;
-      text-align: center;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 5px 10px;
+      background: white;
+      cursor: pointer;
+      max-width: 160px;
     }
+
+    .nav-select:hover { border-color: #2d6a4f; }
 
     @media print {
       body { background: white; padding: 0; }
@@ -936,9 +942,13 @@ function construireNavSemaines(numeroActuel) {
     ? `<button class="btn-nav" onclick="naviguerSemaine('${suivante.id}')" title="${suivante.label}">→</button>`
     : `<button class="btn-nav" disabled>→</button>`;
 
+  const options = SEMAINES_P1.map(s =>
+    `<option value="${s.id}"${s.numero === numeroActuel ? ' selected' : ''}>${s.label}</option>`
+  ).join('');
+
   return `<div class="nav-semaines">
     ${btnPrev}
-    <span class="nav-semaines-label">${courante?.label || ''}</span>
+    <select class="nav-select" onchange="naviguerSemaine(this.value)">${options}</select>
     ${btnNext}
   </div>`;
 }

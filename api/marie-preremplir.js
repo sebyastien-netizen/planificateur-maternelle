@@ -227,8 +227,9 @@ module.exports = async function handler(req, res) {
       );
 
       for (const regle of reglesDuJour) {
-        // PS : 08h40–08h50 · GS : 09h20–09h30
         const estPS = regle.niveau === 'PS';
+        // Pas de rituels maths GS en S1 rentrée
+        if (!estPS && numeroSemaineApp === 1) continue;
         creneauxAInserer.push(makeCreneau({
           jour,
           heure_debut:    estPS ? '08:40' : '09:20',

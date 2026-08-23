@@ -664,6 +664,8 @@ async function selectionnerSemaineTiroir(numeroSemaine, btnEl) {
   document.querySelectorAll('.btn-semaine').forEach(b => b.classList.remove('actif'));
   if (btnEl) btnEl.classList.add('actif');
   etatApp.semaineTiroir = numeroSemaine;
+  // Vider le cache pour forcer un rechargement depuis Supabase
+  etatApp.reglesCache = null;
   const estCourante = (numeroSemaine === etatApp.numeroSemaine);
 
   if (!etatApp.modeSelection) {

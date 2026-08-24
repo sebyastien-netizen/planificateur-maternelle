@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Planificateur Maternelle — Accueil</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, sans-serif;
+      background: #f5f5f0;
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: white;
+      border-bottom: 1px solid #e0e0d8;
+      padding: 0 2rem;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .header-left h1 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #2d6a4f;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .user-info {
+      font-size: 0.85rem;
+      color: #666;
+    }
+
+    .btn-deconnexion {
+      font-size: 0.85rem;
+      color: #999;
+      background: none;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 0.35rem 0.75rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-deconnexion:hover {
+      border-color: #c0392b;
+      color: #c0392b;
+    }
+
+    /* ── Main ── */
+    .main {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 2.5rem 1.5rem;
+    }
+
+    .bienvenue {
+      margin-bottom: 2rem;
+    }
+
+    .bienvenue h2 {
+      font-size: 1.4rem;
+      color: #1b4332;
+      font-weight: 600;
+      margin-bottom: 0.3rem;
+    }
+
+    .bienvenue p {
+      font-size: 0.9rem;
+      color: #888;
+    }
+
+    /* ── Grille cartes ── */
+    .grille {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1.25rem;
+    }
+
+    .carte {
+      background: white;
+      border-radius: 12px;
+      border: 1px solid #e8e8e2;
+      padding: 1.75rem 1.5rem;
+      cursor: pointer;
+      transition: box-shadow 0.18s, border-color 0.18s, transform 0.12s;
+      text-decoration: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      position: relative;
+    }
+
+    .carte:hover {
+      box-shadow: 0 4px 16px rgba(0,0,0,0.09);
+      border-color: #b7ddc8;
+      transform: translateY(-2px);
+    }
+
+    .carte.disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+
+    .carte-icone {
+      font-size: 2rem;
+      line-height: 1;
+    }
+
+    .carte-titre {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: #1b4332;
+    }
+
+    .carte-desc {
+      font-size: 0.85rem;
+      color: #777;
+      line-height: 1.5;
+    }
+
+    .carte-badge {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 0.2rem 0.55rem;
+      border-radius: 4px;
+      background: #f0f0ea;
+      color: #999;
+      letter-spacing: 0.02em;
+    }
+
+    .carte-badge.nouveau {
+      background: #e8f5ee;
+      color: #2d6a4f;
+    }
+
+    /* ── Info période ── */
+    .info-periode {
+      margin-top: 2.5rem;
+      background: white;
+      border-radius: 10px;
+      border: 1px solid #e8e8e2;
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .info-periode-left {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+
+    .info-periode-left span:first-child {
+      font-size: 0.8rem;
+      color: #999;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .info-periode-left strong {
+      font-size: 1rem;
+      color: #1b4332;
+    }
+
+    .btn-ouvrir {
+      font-size: 0.85rem;
+      background: #2d6a4f;
+      color: white;
+      border: none;
+      border-radius: 7px;
+      padding: 0.5rem 1.1rem;
+      cursor: pointer;
+      transition: background 0.15s;
+      white-space: nowrap;
+    }
+
+    .btn-ouvrir:hover { background: #1b4332; }
+
+    @media (max-width: 520px) {
+      .header { padding: 0 1rem; }
+      .main { padding: 1.5rem 1rem; }
+      .info-periode { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="header">
+  <div class="header-left">
+    <span style="font-size:1.4rem">🍀</span>
+    <h1>Planificateur Maternelle</h1>
+  </div>
+  <div class="header-right">
+    <span class="user-info" id="user-info">Chargement…</span>
+    <button class="btn-deconnexion" onclick="seDeconnecter()">Déconnexion</button>
+  </div>
+</header>
+
+<!-- Main -->
+<main class="main">
+
+  <div class="bienvenue">
+    <h2 id="titre-bienvenue">Bonjour 👋</h2>
+    <p id="sous-titre">Année scolaire 2026–2027</p>
+  </div>
+
+  <!-- Cartes -->
+  <div class="grille">
+
+    <a class="carte" id="carte-cahier" href="#">
+      <span class="carte-icone">🗓️</span>
+      <span class="carte-titre">Cahier journal</span>
+      <span class="carte-desc">Planifiez vos semaines, consultez et modifiez vos créneaux de la journée.</span>
+    </a>
+
+    <a class="carte" href="encyclopedie.html">
+      <span class="carte-badge nouveau">Nouveau</span>
+      <span class="carte-icone">📚</span>
+      <span class="carte-titre">Encyclopédie</span>
+      <span class="carte-desc">Consultez les séquences et séances par domaine du programme, avec accès aux méthodes.</span>
+    </a>
+
+    <div class="carte disabled">
+      <span class="carte-badge">Bientôt</span>
+      <span class="carte-icone">📋</span>
+      <span class="carte-titre">Fiches ateliers</span>
+      <span class="carte-desc">Créez, stockez et assignez vos fiches ateliers à vos créneaux.</span>
+    </div>
+
+    <div class="carte disabled">
+      <span class="carte-badge">Bientôt</span>
+      <span class="carte-icone">⚙️</span>
+      <span class="carte-titre">Paramètres</span>
+      <span class="carte-desc">Configurez votre classe, vos périodes et vos préférences.</span>
+    </div>
+
+  </div>
+
+  <!-- Info semaine courante -->
+  <div class="info-periode">
+    <div class="info-periode-left">
+      <span>Semaine en cours</span>
+      <strong id="semaine-courante">Chargement…</strong>
+    </div>
+    <button class="btn-ouvrir" onclick="ouvrirSemaineCourante()">Ouvrir le cahier →</button>
+  </div>
+
+</main>
+
+<script>
+  const SUPABASE_URL = 'https://wqsprjlocuhandhvpytx.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indxc3ByamxvY3VoYW5kaHZweXR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQzNTMwMDUsImV4cCI6MjA5OTkyOTAwNX0.elZ2-H2ACmNv6uKNCrK2P2kfxYJJEn1G4J-fZeKR3-Q';
+
+  // UUIDs semaines P1 dans l'ordre
+  const SEMAINES_P1 = [
+    { id: 'a4338c80-ee36-4b56-92a9-4eacca4c096a', label: 'Semaine 1 — P1 (Rentrée)' },
+    { id: '1710aaea-db55-4f55-bf75-dbd5258ead88', label: 'Semaine 2 — P1' },
+    { id: 'f7c36cd8-3a6e-4317-962c-5d8edc16a888', label: 'Semaine 3 — P1' },
+    { id: '9b0b5d89-55e3-41f4-bda4-6a3fd89c0eb4', label: 'Semaine 4 — P1' },
+    { id: 'a8eff5fd-aa1d-4260-bb46-ddbe2c442d91', label: 'Semaine 5 — P1' },
+    { id: '91832461-1a4a-431f-9b04-0659588567a7', label: 'Semaine 6 — P1' },
+    { id: '047ff3bd-d389-48ff-8d2c-7e21fb1a14a7', label: 'Semaine 7 — P1' }
+  ];
+
+  // ── Vérification session ──
+  const token = sessionStorage.getItem('sb_access_token');
+  if (!token) window.location.href = 'index.html';
+
+  // ── Charger infos utilisatrice ──
+  async function chargerInfos() {
+    try {
+      const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await res.json();
+      if (data.email) {
+        document.getElementById('user-info').textContent = data.email;
+      }
+    } catch(e) {
+      console.warn('Impossible de charger les infos utilisateur', e);
+    }
+  }
+
+  // ── Trouver la semaine courante ──
+  function trouverSemaineCourante() {
+    const auj = new Date();
+
+    // Dates de début P1 (lundi)
+    const dateDebuts = [
+      new Date('2026-09-01'), // S1
+      new Date('2026-09-07'), // S2
+      new Date('2026-09-14'), // S3
+      new Date('2026-09-21'), // S4
+      new Date('2026-09-28'), // S5
+      new Date('2026-10-05'), // S6
+      new Date('2026-10-12')  // S7
+    ];
+
+    const finP1 = new Date('2026-10-18');
+
+    // Si avant P1 ou après P1 → S1 par défaut
+    if (auj < dateDebuts[0] || auj > finP1) {
+      return SEMAINES_P1[0];
+    }
+
+    // Trouver la semaine correspondante
+    for (let i = dateDebuts.length - 1; i >= 0; i--) {
+      if (auj >= dateDebuts[i]) {
+        return SEMAINES_P1[i];
+      }
+    }
+    return SEMAINES_P1[0];
+  }
+
+  // ── Init ──
+  function init() {
+    chargerInfos();
+
+    const semaine = trouverSemaineCourante();
+    document.getElementById('semaine-courante').textContent = semaine.label;
+
+    // Lien carte cahier journal → semaine courante
+    document.getElementById('carte-cahier').href = `semaine.html?id=${semaine.id}`;
+  }
+
+  function ouvrirSemaineCourante() {
+    const semaine = trouverSemaineCourante();
+    window.location.href = `semaine.html?id=${semaine.id}`;
+  }
+
+  function seDeconnecter() {
+    sessionStorage.removeItem('sb_access_token');
+    sessionStorage.removeItem('sb_user_id');
+    window.location.href = 'index.html';
+  }
+
+  init();
+</script>
+
+</body>
+</html>

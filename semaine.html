@@ -385,9 +385,10 @@ let indexSemaineActive = 0;
 
 // ── Charger les périodes depuis Supabase ──
 async function chargerPeriodes() {
-  const res = await fetch(
-    `${SUPABASE_URL}/rest/v1/maternelle_periodes?select=id,nom,date_debut,date_fin&order=date_debut.asc`,
-    { headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` } }
+const token = sessionStorage.getItem('sb_access_token') || SUPABASE_ANON_KEY;
+  const resSemaine = await fetch(
+    `${SUPABASE_URL}/rest/v1/maternelle_semaines?id=eq.${semaineId}&select=id,numero_semaine,periode_id,date_lundi`,
+    { headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${token}` } }
   );
   periodes = await res.json();
   const select = document.getElementById('select-periode');
@@ -402,9 +403,10 @@ async function chargerPeriodes() {
 
 // ── Charger les semaines d'une période ──
 async function chargerSemainesDePeriode(periodeId) {
-  const res = await fetch(
-    `${SUPABASE_URL}/rest/v1/maternelle_semaines?periode_id=eq.${periodeId}&select=id,numero_semaine,date_lundi&order=numero_semaine.asc`,
-    { headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` } }
+const token = sessionStorage.getItem('sb_access_token') || SUPABASE_ANON_KEY;
+  const resSemaine = await fetch(
+    `${SUPABASE_URL}/rest/v1/maternelle_semaines?id=eq.${semaineId}&select=id,numero_semaine,periode_id,date_lundi`,
+    { headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${token}` } }
   );
   semainesDePeriode = await res.json();
 }
@@ -468,9 +470,10 @@ async function chargerSemaine() {
   }
 
   // Trouver à quelle période appartient cette semaine
+const token = sessionStorage.getItem('sb_access_token') || SUPABASE_ANON_KEY;
   const resSemaine = await fetch(
     `${SUPABASE_URL}/rest/v1/maternelle_semaines?id=eq.${semaineId}&select=id,numero_semaine,periode_id,date_lundi`,
-    { headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` } }
+    { headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${token}` } }
   );
   const [semaineMeta] = await resSemaine.json();
 

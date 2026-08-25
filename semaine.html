@@ -391,6 +391,7 @@ async function chargerPeriodes() {
     { headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${token}` } }
   );
   periodes = await res.json();
+console.log('periodes reçues:', periodes);
   const select = document.getElementById('select-periode');
   select.innerHTML = '';
   periodes.forEach(p => {

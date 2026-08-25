@@ -260,9 +260,17 @@
     <h1>🍀 Cahier journal</h1>
     <p id="sous-titre">Chargement…</p>
   </div>
+  <div class="nav-semaines">
+    <select class="nav-select" id="select-periode" onchange="changerPeriode()">
+      <option value="">Période…</option>
+    </select>
+    <button class="btn-nav" id="btn-prev" onclick="naviguerSemaine(-1)" disabled>◀</button>
+    <span id="label-semaine" style="font-size:0.82rem;font-weight:600;color:#1a1a1a;min-width:90px;text-align:center;">—</span>
+    <button class="btn-nav" id="btn-next" onclick="naviguerSemaine(1)" disabled>▶</button>
+  </div>
   <div class="header-actions">
     <button class="btn-rituels" onclick="ouvrirTiroir()">📋 Rituels de la semaine</button>
-    <a href="index.html" class="btn-retour">← Retour</a>
+    <a href="accueil.html" class="btn-retour">← Retour</a>
   </div>
 </div>
 
@@ -366,14 +374,61 @@ let etatApp = {
 // =============================================
 // Chargement principal
 // =============================================
-async function chargerSemaine() {
-  const params = new URLSearchParams(window.location.search);
-  const semaineId = params.get('id');
-  if (!semaineId) { afficherErreur('Aucune semaine sélectionnée. Ajoutez ?id=UUID à l\'URL.'); return; }
-  etatApp.semaineId = semaineId;
+// ── Constantes Supabase ──
+const SUPABASE_URL = 'https://wqsprjlocuhandhvpytx.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indxc3ByamxvY3VoYW5kaHZweXR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQzNTMwMDUsImV4cCI6MjA5OTkyOTAwNX0.elZ2-H2ACmNv6uKNCrK2P2kfxYJJEn1G4J-fZeKR3-Q';
 
+// ── État navigation ──
+let periodes = [];
+let semainesDePeriode = [];
+let indexSemaineActive = 0;
+
+// ── Charger les périodes depuis Supabase ──
+async function chargerPeriodes() {
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/maternelle_periodes?select=id,nom,date_debut,date_fin&order=date_debut.asc`,
+    { headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` } }
+  );
+  periodes = await res.json();
+  const select = document.getElementById('select-periode');
+  select.innerHTML = '';
+  periodes.forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p.id;
+    opt.textContent = p.nom;
+    select.appendChild(opt);
+  });
+}
+
+// ── Charger les semaines d'une période ──
+async function chargerSemainesDePeriode(periodeId) {
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/maternelle_semaines?periode_id=eq.${periodeId}&select=id,numero_semaine,date_lundi&order=numero_semaine.asc`,
+    { headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` } }
+  );
+  semainesDePeriode = await res.json();
+}
+
+// ── Naviguer vers une semaine par index ──
+async function allerASemaine(index) {
+  if (index < 0 || index >= semainesDePeriode.length) return;
+  indexSemaineActive = index;
+  const semaine = semainesDePeriode[index];
+
+  // Mettre à jour l'URL sans recharger la page
+  const url = new URL(window.location.href);
+  url.searchParams.set('id', semaine.id);
+  window.history.replaceState({}, '', url);
+
+  // Mettre à jour le label et les boutons
+  document.getElementById('label-semaine').textContent = `S${semaine.numero_semaine}`;
+  document.getElementById('btn-prev').disabled = index === 0;
+  document.getElementById('btn-next').disabled = index === semainesDePeriode.length - 1;
+
+  // Charger les données de la semaine
+  etatApp.semaineId = semaine.id;
   try {
-    const res = await fetch(`/api/semaine?id=${semaineId}`);
+    const res = await fetch(`/api/semaine?id=${semaine.id}`);
     if (!res.ok) { const err = await res.json(); throw new Error(err.error || `Erreur ${res.status}`); }
     const data = await res.json();
     etatApp.numeroSemaine = data.semaine.numero_semaine;
@@ -382,6 +437,57 @@ async function chargerSemaine() {
   } catch (err) {
     afficherErreur(`Impossible de charger la semaine : ${err.message}`);
   }
+}
+
+// ── Changer de période via le select ──
+async function changerPeriode() {
+  const periodeId = document.getElementById('select-periode').value;
+  if (!periodeId) return;
+  await chargerSemainesDePeriode(periodeId);
+  await allerASemaine(0);
+}
+
+// ── Boutons précédent / suivant ──
+function naviguerSemaine(delta) {
+  allerASemaine(indexSemaineActive + delta);
+}
+
+// ── Initialisation principale ──
+async function chargerSemaine() {
+  const params = new URLSearchParams(window.location.search);
+  const semaineId = params.get('id');
+
+  // Charger toutes les périodes
+  await chargerPeriodes();
+
+  if (!semaineId) {
+    // Pas d'id → ouvrir P1 S1 par défaut
+    document.getElementById('select-periode').value = periodes[0]?.id;
+    await changerPeriode();
+    return;
+  }
+
+  // Trouver à quelle période appartient cette semaine
+  const resSemaine = await fetch(
+    `${SUPABASE_URL}/rest/v1/maternelle_semaines?id=eq.${semaineId}&select=id,numero_semaine,periode_id,date_lundi`,
+    { headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` } }
+  );
+  const [semaineMeta] = await resSemaine.json();
+
+  if (!semaineMeta) {
+    afficherErreur('Semaine introuvable.');
+    return;
+  }
+
+  // Sélectionner la bonne période dans le select
+  document.getElementById('select-periode').value = semaineMeta.periode_id;
+
+  // Charger les semaines de cette période
+  await chargerSemainesDePeriode(semaineMeta.periode_id);
+
+  // Trouver l'index de la semaine active
+  const index = semainesDePeriode.findIndex(s => s.id === semaineId);
+  await allerASemaine(index >= 0 ? index : 0);
 }
 
 // =============================================

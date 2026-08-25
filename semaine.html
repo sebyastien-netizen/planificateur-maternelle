@@ -386,8 +386,6 @@ let indexSemaineActive = 0;
 // ── Charger les périodes depuis Supabase ──
 async function chargerPeriodes() {
 const token = sessionStorage.getItem('sb_access_token') || SUPABASE_ANON_KEY;
-  const resSemaine = await fetch(
-    `${SUPABASE_URL}/rest/v1/maternelle_semaines?id=eq.${semaineId}&select=id,numero_semaine,periode_id,date_lundi`,
     { headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${token}` } }
   );
   periodes = await res.json();

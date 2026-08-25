@@ -265,7 +265,7 @@
       <option value="">Période…</option>
     </select>
     <button class="btn-nav" id="btn-prev" onclick="naviguerSemaine(-1)" disabled>◀</button>
-    <span id="label-semaine" style="font-size:0.82rem;font-weight:600;color:#1a1a1a;min-width:90px;text-align:center;">—</span>
+    <select class="nav-select" id="select-semaine" onchange="allerASemaineParSelect()"></select>
     <button class="btn-nav" id="btn-next" onclick="naviguerSemaine(1)" disabled>▶</button>
   </div>
   <div class="header-actions">
@@ -410,6 +410,14 @@ async function chargerSemainesDePeriode(periodeId) {
     { headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${token}` } }
   );
   semainesDePeriode = await res.json();
+  const selectSemaine = document.getElementById('select-semaine');
+selectSemaine.innerHTML = '';
+semainesDePeriode.forEach((s, i) => {
+  const opt = document.createElement('option');
+  opt.value = i;
+  opt.textContent = `S${s.numero_semaine}`;
+  selectSemaine.appendChild(opt);
+});
 }
 
 // ── Naviguer vers une semaine par index ──
@@ -418,17 +426,19 @@ async function allerASemaine(index) {
   indexSemaineActive = index;
   const semaine = semainesDePeriode[index];
 
-  // Mettre à jour l'URL sans recharger la page
+  // Mettre à jour l'URL sans recharger
   const url = new URL(window.location.href);
   url.searchParams.set('id', semaine.id);
   window.history.replaceState({}, '', url);
 
-  // Mettre à jour le label et les boutons
-  document.getElementById('label-semaine').textContent = `S${semaine.numero_semaine}`;
+  // Mettre à jour le select semaine
+  document.getElementById('select-semaine').value = index;
+
+  // Mettre à jour les boutons
   document.getElementById('btn-prev').disabled = index === 0;
   document.getElementById('btn-next').disabled = index === semainesDePeriode.length - 1;
 
-  // Charger les données de la semaine
+  // Charger les données
   etatApp.semaineId = semaine.id;
   try {
     const res = await fetch(`/api/semaine?id=${semaine.id}`);
@@ -440,6 +450,11 @@ async function allerASemaine(index) {
   } catch (err) {
     afficherErreur(`Impossible de charger la semaine : ${err.message}`);
   }
+}
+
+function allerASemaineParSelect() {
+  const index = parseInt(document.getElementById('select-semaine').value);
+  allerASemaine(index);
 }
 
 // ── Changer de période via le select ──

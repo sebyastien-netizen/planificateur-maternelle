@@ -404,9 +404,9 @@ console.log('periodes reçues:', periodes);
 
 // ── Charger les semaines d'une période ──
 async function chargerSemainesDePeriode(periodeId) {
-const token = sessionStorage.getItem('sb_access_token') || SUPABASE_ANON_KEY;
-  const resSemaine = await fetch(
-    `${SUPABASE_URL}/rest/v1/maternelle_semaines?id=eq.${semaineId}&select=id,numero_semaine,periode_id,date_lundi`,
+  const token = sessionStorage.getItem('sb_access_token') || SUPABASE_ANON_KEY;
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/maternelle_semaines?periode_id=eq.${periodeId}&select=id,numero_semaine,date_lundi&order=numero_semaine.asc`,
     { headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${token}` } }
   );
   semainesDePeriode = await res.json();

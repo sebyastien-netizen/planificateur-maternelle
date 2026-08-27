@@ -353,6 +353,84 @@
       font-style: italic;
     }
 
+    /* ── Panneau PDF ── */
+    .pdf-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    .pdf-overlay.actif { display: flex; }
+
+    .pdf-panneau {
+      background: #1a1a1a;
+      border-radius: 10px;
+      width: 90vw;
+      height: 90vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .pdf-toolbar {
+      background: #2a2a2a;
+      padding: 0.6rem 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      gap: 1rem;
+    }
+
+    .pdf-toolbar-info {
+      font-size: 0.82rem;
+      color: #ccc;
+    }
+
+    .pdf-toolbar-nav {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .pdf-btn {
+      background: #444;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      padding: 0.3rem 0.7rem;
+      cursor: pointer;
+      font-size: 0.8rem;
+      transition: background 0.15s;
+    }
+    .pdf-btn:hover { background: #555; }
+    .pdf-btn.fermer { background: #c0392b; }
+    .pdf-btn.fermer:hover { background: #e74c3c; }
+
+    .pdf-page-info {
+      font-size: 0.8rem;
+      color: #aaa;
+      min-width: 80px;
+      text-align: center;
+    }
+
+    .pdf-canvas-container {
+      flex: 1;
+      overflow: auto;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    #pdf-canvas {
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+      max-width: 100%;
+    }
+
     @media (max-width: 768px) {
       .encyclopedie {
         grid-template-columns: 1fr;
@@ -362,6 +440,7 @@
       .colonne { height: auto; max-height: 300px; }
     }
   </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 </head>
 <body>
 
@@ -373,6 +452,24 @@
   </div>
   <button class="btn-deconnexion" onclick="seDeconnecter()">Déconnexion</button>
 </header>
+
+<!-- Overlay PDF -->
+<div class="pdf-overlay" id="pdf-overlay" onclick="fermerPdf(event)">
+  <div class="pdf-panneau" onclick="event.stopPropagation()">
+    <div class="pdf-toolbar">
+      <span class="pdf-toolbar-info" id="pdf-titre">—</span>
+      <div class="pdf-toolbar-nav">
+        <button class="pdf-btn" onclick="changerPage(-1)">◀</button>
+        <span class="pdf-page-info" id="pdf-page-info">Page —</span>
+        <button class="pdf-btn" onclick="changerPage(1)">▶</button>
+      </div>
+      <button class="pdf-btn fermer" onclick="fermerPdf()">✕ Fermer</button>
+    </div>
+    <div class="pdf-canvas-container">
+      <canvas id="pdf-canvas"></canvas>
+    </div>
+  </div>
+</div>
 
 <!-- Layout 3 colonnes -->
 <div class="encyclopedie">
@@ -537,8 +634,11 @@
       );
 
       const pdfUrl = sequence.pdf_fichier;
+      const pdfPage = sequence.pdf_page_debut || 1;
       const pdfBtnClass = pdfUrl ? 'btn-pdf' : 'btn-pdf desactive';
-      const pdfBtnHref = pdfUrl ? `href="${pdfUrl}" target="_blank"` : '';
+      const pdfBtnClick = pdfUrl
+        ? `onclick="ouvrirPdf('${pdfUrl}', ${pdfPage}, '${sequence.titre.replace(/'/g, "\\'")}')"`
+        : '';
       const pdfPageInfo = sequence.pdf_page_debut
         ? `Pages ${sequence.pdf_page_debut}–${sequence.pdf_page_fin || sequence.pdf_page_debut} dans le PDF`
         : 'Référence PDF non disponible';
@@ -551,7 +651,7 @@
             <div class="sequence-entete-meta">
               ${sequence.periode ? `<span class="badge-periode">Période ${sequence.periode}</span>` : ''}
               ${sequence.niveau ? `<span class="badge-niveau">${sequence.niveau}</span>` : ''}
-              <a class="${pdfBtnClass}" ${pdfBtnHref}>📄 Voir dans le PDF</a>
+              <button class="${pdfBtnClass}" ${pdfBtnClick}>📄 Voir dans le PDF</button>
               <span class="page-pdf-info">${pdfPageInfo}</span>
             </div>
           </div>
@@ -606,6 +706,65 @@
     } catch(e) {
       panneau.innerHTML = `<div class="vide-msg">Erreur : ${e.message}</div>`;
     }
+  }
+
+  // ── PDF.js ──
+  let pdfDoc = null;
+  let pageActuelle = 1;
+
+  async function ouvrirPdf(url, page, titre) {
+    document.getElementById('pdf-titre').textContent = titre;
+    document.getElementById('pdf-overlay').classList.add('actif');
+    document.getElementById('pdf-page-info').textContent = 'Chargement…';
+    document.getElementById('pdf-canvas').getContext('2d').clearRect(
+      0, 0,
+      document.getElementById('pdf-canvas').width,
+      document.getElementById('pdf-canvas').height
+    );
+
+    try {
+      const pdfjsLib = window['pdfjs-dist/build/pdf'];
+      pdfjsLib.GlobalWorkerOptions.workerSrc =
+        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+      pdfDoc = await pdfjsLib.getDocument(url).promise;
+      pageActuelle = Math.min(page, pdfDoc.numPages);
+      await afficherPage(pageActuelle);
+    } catch(e) {
+      document.getElementById('pdf-page-info').textContent = 'Erreur chargement PDF';
+      console.error(e);
+    }
+  }
+
+  async function afficherPage(num) {
+    const page = await pdfDoc.getPage(num);
+    const canvas = document.getElementById('pdf-canvas');
+    const container = canvas.parentElement;
+    const scale = Math.min(
+      (container.clientWidth - 32) / page.getViewport({ scale: 1 }).width,
+      (container.clientHeight - 32) / page.getViewport({ scale: 1 }).height,
+      2
+    );
+    const viewport = page.getViewport({ scale });
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+    document.getElementById('pdf-page-info').textContent =
+      `Page ${num} / ${pdfDoc.numPages}`;
+  }
+
+  async function changerPage(delta) {
+    if (!pdfDoc) return;
+    const nouvelle = pageActuelle + delta;
+    if (nouvelle < 1 || nouvelle > pdfDoc.numPages) return;
+    pageActuelle = nouvelle;
+    await afficherPage(pageActuelle);
+  }
+
+  function fermerPdf(e) {
+    if (e && e.target !== document.getElementById('pdf-overlay')) return;
+    document.getElementById('pdf-overlay').classList.remove('actif');
+    pdfDoc = null;
   }
 
   function seDeconnecter() {

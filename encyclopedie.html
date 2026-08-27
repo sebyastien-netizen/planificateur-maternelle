@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Encyclopédie — Planificateur Maternelle</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, sans-serif;
+      background: #f5f5f0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: white;
+      border-bottom: 1px solid #e0e0d8;
+      padding: 0 1.5rem;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      flex-shrink: 0;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .btn-retour {
+      font-size: 0.85rem;
+      color: #666;
+      background: none;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 0.35rem 0.75rem;
+      cursor: pointer;
+      transition: all 0.15s;
+      text-decoration: none;
+    }
+
+    .btn-retour:hover { border-color: #2d6a4f; color: #2d6a4f; }
+
+    .header-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #2d6a4f;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .btn-deconnexion {
+      font-size: 0.85rem;
+      color: #999;
+      background: none;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 0.35rem 0.75rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-deconnexion:hover { border-color: #c0392b; color: #c0392b; }
+
+    /* ── Layout 3 colonnes ── */
+    .encyclopedie {
+      display: grid;
+      grid-template-columns: 220px 280px 1fr;
+      flex: 1;
+      overflow: hidden;
+      height: calc(100vh - 56px);
+    }
+
+    /* ── Colonnes ── */
+    .colonne {
+      border-right: 1px solid #e0e0d8;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: white;
+    }
+
+    .colonne:last-child { border-right: none; background: #fafaf8; }
+
+    .colonne-header {
+      padding: 0.85rem 1rem;
+      border-bottom: 1px solid #e8e8e2;
+      background: #fafaf8;
+      flex-shrink: 0;
+    }
+
+    .colonne-header h3 {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #999;
+    }
+
+    .colonne-body {
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    /* ── Items domaines ── */
+    .domaine-item {
+      padding: 0.75rem 1rem;
+      cursor: pointer;
+      border-bottom: 1px solid #f0f0ea;
+      transition: background 0.12s;
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+
+    .domaine-item:hover { background: #f5f5f0; }
+
+    .domaine-item.actif { background: #e8f5ee; border-left: 3px solid #2d6a4f; }
+
+    .domaine-item .domaine-nom {
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: #1b4332;
+      line-height: 1.3;
+    }
+
+    .domaine-item .domaine-count {
+      font-size: 0.72rem;
+      color: #aaa;
+    }
+
+    /* ── Items séquences ── */
+    .sequence-item {
+      padding: 0.8rem 1rem;
+      cursor: pointer;
+      border-bottom: 1px solid #f0f0ea;
+      transition: background 0.12s;
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+    }
+
+    .sequence-item:hover { background: #f5f5f0; }
+    .sequence-item.actif { background: #e8f5ee; border-left: 3px solid #2d6a4f; }
+
+    .sequence-titre {
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: #1b4332;
+      line-height: 1.3;
+    }
+
+    .sequence-meta {
+      font-size: 0.72rem;
+      color: #aaa;
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .badge-periode {
+      background: #e8f5ee;
+      color: #2d6a4f;
+      padding: 0.1rem 0.4rem;
+      border-radius: 3px;
+      font-size: 0.68rem;
+      font-weight: 600;
+    }
+
+    .badge-niveau {
+      background: #f0ecf8;
+      color: #6b4fa0;
+      padding: 0.1rem 0.4rem;
+      border-radius: 3px;
+      font-size: 0.68rem;
+      font-weight: 600;
+    }
+
+    /* ── Panneau séances ── */
+    .panneau-vide {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: #bbb;
+      gap: 0.75rem;
+      font-size: 0.9rem;
+    }
+
+    .panneau-vide span { font-size: 2.5rem; }
+
+    .sequence-detail {
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .sequence-entete {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid #e8e8e2;
+    }
+
+    .sequence-entete h2 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #1b4332;
+    }
+
+    .sequence-entete p {
+      font-size: 0.85rem;
+      color: #777;
+      line-height: 1.5;
+    }
+
+    .sequence-entete-meta {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .btn-pdf {
+      font-size: 0.8rem;
+      background: #2d6a4f;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 0.4rem 0.9rem;
+      cursor: pointer;
+      transition: background 0.15s;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .btn-pdf:hover { background: #1b4332; }
+
+    .btn-pdf.desactive {
+      background: #ddd;
+      color: #aaa;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+
+    .page-pdf-info {
+      font-size: 0.78rem;
+      color: #999;
+      font-style: italic;
+    }
+
+    /* ── Séances ── */
+    .seances-titre {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #999;
+    }
+
+    .seance-card {
+      background: white;
+      border: 1px solid #e8e8e2;
+      border-radius: 8px;
+      padding: 1rem 1.1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .seance-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+
+    .seance-ordre {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: #aaa;
+      min-width: 20px;
+    }
+
+    .seance-activite {
+      font-size: 0.88rem;
+      font-weight: 500;
+      color: #1b4332;
+      flex: 1;
+    }
+
+    .seance-badges {
+      display: flex;
+      gap: 0.3rem;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      font-size: 0.68rem;
+      font-weight: 600;
+      padding: 0.15rem 0.45rem;
+      border-radius: 3px;
+    }
+
+    .badge-ens  { background: #eaf1f8; color: #2e5f8a; }
+    .badge-atsem { background: #fdf0e3; color: #c85a0a; }
+    .badge-auto { background: #f5f5f3; color: #666; }
+    .badge-gs   { background: #e8f5ee; color: #2d6a4f; }
+    .badge-ps   { background: #f0ecf8; color: #6b4fa0; }
+    .badge-psgs { background: #fdf0e3; color: #c85a0a; }
+
+    .seance-description {
+      font-size: 0.8rem;
+      color: #666;
+      line-height: 1.5;
+    }
+
+    .seance-page {
+      font-size: 0.75rem;
+      color: #bbb;
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+
+    /* ── États ── */
+    .chargement {
+      padding: 1.5rem;
+      color: #bbb;
+      font-size: 0.85rem;
+      text-align: center;
+    }
+
+    .vide-msg {
+      padding: 1.5rem;
+      color: #bbb;
+      font-size: 0.85rem;
+      text-align: center;
+      font-style: italic;
+    }
+
+    /* ── Panneau PDF ── */
+    .pdf-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    .pdf-overlay.actif { display: flex; }
+
+    .pdf-panneau {
+      background: #1a1a1a;
+      border-radius: 10px;
+      width: 90vw;
+      height: 90vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .pdf-toolbar {
+      background: #2a2a2a;
+      padding: 0.6rem 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      gap: 1rem;
+    }
+
+    .pdf-toolbar-info {
+      font-size: 0.82rem;
+      color: #ccc;
+    }
+
+    .pdf-toolbar-nav {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .pdf-btn {
+      background: #444;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      padding: 0.3rem 0.7rem;
+      cursor: pointer;
+      font-size: 0.8rem;
+      transition: background 0.15s;
+    }
+    .pdf-btn:hover { background: #555; }
+    .pdf-btn.fermer { background: #c0392b; }
+    .pdf-btn.fermer:hover { background: #e74c3c; }
+
+    .pdf-page-info {
+      font-size: 0.8rem;
+      color: #aaa;
+      min-width: 80px;
+      text-align: center;
+    }
+
+    .pdf-canvas-container {
+      flex: 1;
+      overflow: auto;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    #pdf-canvas {
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+      max-width: 100%;
+    }
+
+    /* ── Tiroir PDF ── */
+    .pdf-tiroir {
+      position: fixed;
+      top: 0;
+      right: -55vw;
+      width: 55vw;
+      height: 100vh;
+      background: #1a1a1a;
+      z-index: 50;
+      display: flex;
+      flex-direction: column;
+      transition: right 0.3s ease;
+      box-shadow: -4px 0 24px rgba(0,0,0,0.3);
+    }
+
+    .pdf-tiroir.ouvert { right: 0; }
+
+    .pdf-tiroir-toolbar {
+      background: #2a2a2a;
+      padding: 0.6rem 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      gap: 1rem;
+    }
+
+    .pdf-tiroir-titre {
+      font-size: 0.82rem;
+      color: #ccc;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      flex: 1;
+    }
+
+    .pdf-tiroir-btn {
+      background: #c0392b;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      padding: 0.3rem 0.8rem;
+      cursor: pointer;
+      font-size: 0.8rem;
+      flex-shrink: 0;
+    }
+
+    .pdf-tiroir-btn:hover { background: #e74c3c; }
+
+    .pdf-tiroir iframe {
+      flex: 1;
+      border: none;
+      width: 100%;
+    }
+
+    .pdf-fond {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      z-index: 49;
+    }
+
+    .pdf-fond.actif { display: block; }
+
+    @media (max-width: 768px) {
+      .encyclopedie {
+        grid-template-columns: 1fr;
+        height: auto;
+        overflow: visible;
+      }
+      .colonne { height: auto; max-height: 300px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Fond semi-transparent -->
+<div class="pdf-fond" id="pdf-fond" onclick="fermerTiroir()"></div>
+
+<!-- Tiroir PDF -->
+<div class="pdf-tiroir" id="pdf-tiroir">
+  <div class="pdf-tiroir-toolbar">
+    <span class="pdf-tiroir-titre" id="pdf-tiroir-titre">—</span>
+    <button class="pdf-tiroir-btn" onclick="fermerTiroir()">✕ Fermer</button>
+  </div>
+  <iframe id="pdf-iframe" src="" title="PDF"></iframe>
+</div>
+
+<!-- Header -->
+<header class="header">
+  <div class="header-left">
+    <a class="btn-retour" href="accueil.html">← Accueil</a>
+    <span class="header-title">📚 Encyclopédie</span>
+  </div>
+  <button class="btn-deconnexion" onclick="seDeconnecter()">Déconnexion</button>
+</header>
+
+<!-- Overlay PDF -->
+<div class="pdf-overlay" id="pdf-overlay" onclick="fermerPdf(event)">
+  <div class="pdf-panneau" onclick="event.stopPropagation()">
+    <div class="pdf-toolbar">
+      <span class="pdf-toolbar-info" id="pdf-titre">—</span>
+      <div class="pdf-toolbar-nav">
+        <button class="pdf-btn" onclick="changerPage(-1)">◀</button>
+        <span class="pdf-page-info" id="pdf-page-info">Page —</span>
+        <button class="pdf-btn" onclick="changerPage(1)">▶</button>
+      </div>
+      <button class="pdf-btn fermer" onclick="fermerPdf()">✕ Fermer</button>
+    </div>
+    <div class="pdf-canvas-container">
+      <canvas id="pdf-canvas"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Layout 3 colonnes -->
+<div class="encyclopedie">
+
+  <!-- Colonne 1 : Domaines -->
+  <div class="colonne">
+    <div class="colonne-header">
+      <h3>Domaines</h3>
+    </div>
+    <div class="colonne-body" id="liste-domaines">
+      <div class="chargement">Chargement…</div>
+    </div>
+  </div>
+
+  <!-- Colonne 2 : Séquences -->
+  <div class="colonne">
+    <div class="colonne-header">
+      <h3>Séquences</h3>
+    </div>
+    <div class="colonne-body" id="liste-sequences">
+      <div class="vide-msg">Sélectionnez un domaine</div>
+    </div>
+  </div>
+
+  <!-- Colonne 3 : Séances -->
+  <div class="colonne">
+    <div class="colonne-header">
+      <h3>Séances</h3>
+    </div>
+    <div class="colonne-body" id="panneau-seances">
+      <div class="panneau-vide">
+        <span>📖</span>
+        <p>Sélectionnez une séquence</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const SUPABASE_URL = 'https://wqsprjlocuhandhvpytx.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indxc3ByamxvY3VoYW5kaHZweXR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQzNTMwMDUsImV4cCI6MjA5OTkyOTAwNX0.elZ2-H2ACmNv6uKNCrK2P2kfxYJJEn1G4J-fZeKR3-Q';
+
+  // ── Vérification session ──
+  const token = sessionStorage.getItem('sb_access_token');
+  if (!token) window.location.href = 'index.html';
+
+  // ── État ──
+  let domaineActif = null;
+  let sequenceActive = null;
+  let sequencesParDomaine = {};
+
+  // ── Fetch Supabase ──
+  async function sbFetch(table, params = '') {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/${table}?${params}`,
+      {
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${token}`
+        }
+      }
+    );
+    if (!res.ok) throw new Error(`Erreur ${res.status}`);
+    return res.json();
+  }
+
+  // ── Charger domaines ──
+  async function chargerDomaines() {
+    try {
+      const domaines = await sbFetch('maternelle_domaines', 'order=id');
+
+      // Compter les séquences par domaine
+      const sequences = await sbFetch('maternelle_sequences', 'select=id,domaine_id,titre,sous_domaine_id,niveau,periode,ordre,description,pdf_fichier,pdf_page_debut,pdf_page_fin&order=periode.asc,ordre.asc');
+
+      // Grouper séquences par domaine
+      sequencesParDomaine = {};
+      sequences.forEach(s => {
+        if (!sequencesParDomaine[s.domaine_id]) sequencesParDomaine[s.domaine_id] = [];
+        sequencesParDomaine[s.domaine_id].push(s);
+      });
+
+      const liste = document.getElementById('liste-domaines');
+      liste.innerHTML = '';
+
+      if (domaines.length === 0) {
+        liste.innerHTML = '<div class="vide-msg">Aucun domaine trouvé</div>';
+        return;
+      }
+
+      domaines.forEach(d => {
+        const count = (sequencesParDomaine[d.id] || []).length;
+        const div = document.createElement('div');
+        div.className = 'domaine-item';
+        div.innerHTML = `
+          <span class="domaine-nom">${d.nom}</span>
+          <span class="domaine-count">${count} séquence${count > 1 ? 's' : ''}</span>
+        `;
+        div.addEventListener('click', () => selectionnerDomaine(d, div));
+        liste.appendChild(div);
+      });
+
+    } catch(e) {
+      document.getElementById('liste-domaines').innerHTML =
+        `<div class="vide-msg">Erreur : ${e.message}</div>`;
+    }
+  }
+
+  // ── Sélectionner un domaine ──
+  function selectionnerDomaine(domaine, el) {
+    // Reset actif
+    document.querySelectorAll('.domaine-item').forEach(d => d.classList.remove('actif'));
+    el.classList.add('actif');
+    domaineActif = domaine.id;
+    sequenceActive = null;
+
+    // Afficher séquences
+    const sequences = sequencesParDomaine[domaine.id] || [];
+    const liste = document.getElementById('liste-sequences');
+
+    if (sequences.length === 0) {
+      liste.innerHTML = '<div class="vide-msg">Aucune séquence pour ce domaine</div>';
+      document.getElementById('panneau-seances').innerHTML =
+        '<div class="panneau-vide"><span>📖</span><p>Sélectionnez une séquence</p></div>';
+      return;
+    }
+
+    liste.innerHTML = '';
+    sequences.forEach(s => {
+      const div = document.createElement('div');
+      div.className = 'sequence-item';
+      div.innerHTML = `
+        <span class="sequence-titre">${s.titre}</span>
+        <div class="sequence-meta">
+          ${s.periode ? `<span class="badge-periode">P${s.periode}</span>` : ''}
+          ${s.niveau ? `<span class="badge-niveau">${s.niveau}</span>` : ''}
+          <span>${s.source || ''}</span>
+        </div>
+      `;
+      div.addEventListener('click', () => selectionnerSequence(s, div));
+      liste.appendChild(div);
+    });
+
+    // Reset panneau séances
+    document.getElementById('panneau-seances').innerHTML =
+      '<div class="panneau-vide"><span>📖</span><p>Sélectionnez une séquence</p></div>';
+  }
+
+  // ── Sélectionner une séquence ──
+  async function selectionnerSequence(sequence, el) {
+    document.querySelectorAll('.sequence-item').forEach(s => s.classList.remove('actif'));
+    el.classList.add('actif');
+    sequenceActive = sequence;
+
+    const panneau = document.getElementById('panneau-seances');
+    panneau.innerHTML = '<div class="chargement">Chargement des séances…</div>';
+
+    try {
+      const seances = await sbFetch(
+        'maternelle_regles',
+        `sequence_id=eq.${sequence.id}&order=ordre_sequence.asc,id.asc&select=*`
+      );
+
+      const pdfUrl = sequence.pdf_fichier;
+      const pdfPage = sequence.pdf_page_debut || 1;
+      const pdfBtnClass = pdfUrl ? 'btn-pdf' : 'btn-pdf desactive';
+      const titreSafe = sequence.titre.replace(/'/g, "\\'");
+      const pdfBtnClick = pdfUrl
+        ? `onclick="ouvrirTiroir('${pdfUrl}', ${pdfPage}, '${titreSafe}')"`
+        : '';
+      const pdfPageInfo = sequence.pdf_page_debut
+        ? `Pages ${sequence.pdf_page_debut}–${sequence.pdf_page_fin || sequence.pdf_page_debut} dans le PDF`
+        : 'Référence PDF non disponible';
+
+      let html = `
+        <div class="sequence-detail">
+          <div class="sequence-entete">
+            <h2>${sequence.titre}</h2>
+            ${sequence.description ? `<p>${sequence.description}</p>` : ''}
+            <div class="sequence-entete-meta">
+              ${sequence.periode ? `<span class="badge-periode">Période ${sequence.periode}</span>` : ''}
+              ${sequence.niveau ? `<span class="badge-niveau">${sequence.niveau}</span>` : ''}
+              <button class="${pdfBtnClass}" ${pdfBtnClick}>📄 Voir dans le PDF</button>
+              <span class="page-pdf-info">${pdfPageInfo}</span>
+            </div>
+          </div>
+
+          <div class="seances-titre">${seances.length} séance${seances.length > 1 ? 's' : ''}</div>
+      `;
+
+      if (seances.length === 0) {
+        html += '<div class="vide-msg">Aucune séance associée à cette séquence</div>';
+      } else {
+        seances.forEach(s => {
+          const badgeRole = s.role === 'ENS'
+            ? '<span class="badge badge-ens">ENS</span>'
+            : s.role === 'ATSEM'
+              ? '<span class="badge badge-atsem">ATSEM</span>'
+              : s.role === 'AUTO'
+                ? '<span class="badge badge-auto">AUTO</span>'
+                : '';
+
+          const badgeNiveau = s.niveau === 'GS'
+            ? '<span class="badge badge-gs">GS</span>'
+            : s.niveau === 'PS'
+              ? '<span class="badge badge-ps">PS</span>'
+              : s.niveau === 'PS+GS'
+                ? '<span class="badge badge-psgs">PS+GS</span>'
+                : '';
+
+          const pageInfo = s.page_pdf
+            ? `<span class="seance-page">📄 Page ${s.page_pdf}</span>`
+            : '';
+
+          html += `
+            <div class="seance-card">
+              <div class="seance-card-header">
+                <span class="seance-ordre">${s.ordre_sequence || '—'}</span>
+                <span class="seance-activite">${s.activite || s.description?.substring(0, 80) + '…' || 'Séance'}</span>
+                <div class="seance-badges">
+                  ${badgeRole}
+                  ${badgeNiveau}
+                </div>
+              </div>
+              ${s.description ? `<div class="seance-description">${s.description}</div>` : ''}
+              ${pageInfo}
+            </div>
+          `;
+        });
+      }
+
+      html += '</div>';
+      panneau.innerHTML = html;
+
+    } catch(e) {
+      panneau.innerHTML = `<div class="vide-msg">Erreur : ${e.message}</div>`;
+    }
+  }
+
+  // ── PDF.js ──
+  let pdfDoc = null;
+  let pageActuelle = 1;
+
+  async function ouvrirPdf(url, page, titre) {
+    document.getElementById('pdf-titre').textContent = titre;
+    document.getElementById('pdf-overlay').classList.add('actif');
+    document.getElementById('pdf-page-info').textContent = 'Chargement…';
+    document.getElementById('pdf-canvas').getContext('2d').clearRect(
+      0, 0,
+      document.getElementById('pdf-canvas').width,
+      document.getElementById('pdf-canvas').height
+    );
+
+    try {
+      const pdfjsLib = window['pdfjs-dist/build/pdf'];
+      pdfjsLib.GlobalWorkerOptions.workerSrc =
+        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+      pdfDoc = await pdfjsLib.getDocument(url).promise;
+      pageActuelle = Math.min(page, pdfDoc.numPages);
+      await afficherPage(pageActuelle);
+    } catch(e) {
+      document.getElementById('pdf-page-info').textContent = 'Erreur chargement PDF';
+      console.error(e);
+    }
+  }
+
+  async function afficherPage(num) {
+    const page = await pdfDoc.getPage(num);
+    const canvas = document.getElementById('pdf-canvas');
+    const container = canvas.parentElement;
+    const dpr = window.devicePixelRatio || 1;
+    const scale = Math.min(
+      (container.clientWidth - 32) / page.getViewport({ scale: 1 }).width,
+      (container.clientHeight - 32) / page.getViewport({ scale: 1 }).height,
+      3
+    ) * dpr;
+    const viewport = page.getViewport({ scale });
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    canvas.style.width = (viewport.width / dpr) + 'px';
+    canvas.style.height = (viewport.height / dpr) + 'px';
+    await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+    document.getElementById('pdf-page-info').textContent =
+      `Page ${num} / ${pdfDoc.numPages}`;
+  }
+
+  async function changerPage(delta) {
+    if (!pdfDoc) return;
+    const nouvelle = pageActuelle + delta;
+    if (nouvelle < 1 || nouvelle > pdfDoc.numPages) return;
+    pageActuelle = nouvelle;
+    await afficherPage(pageActuelle);
+  }
+
+  function fermerPdf(e) {
+    if (e && e.target !== document.getElementById('pdf-overlay')) return;
+    document.getElementById('pdf-overlay').classList.remove('actif');
+    pdfDoc = null;
+  }
+
+  // ── Tiroir PDF ──
+  function ouvrirTiroir(url, page, titre) {
+    document.getElementById('pdf-tiroir-titre').textContent = titre;
+    document.getElementById('pdf-iframe').src = url + '#page=' + page;
+    document.getElementById('pdf-tiroir').classList.add('ouvert');
+    document.getElementById('pdf-fond').classList.add('actif');
+  }
+
+  function fermerTiroir() {
+    document.getElementById('pdf-tiroir').classList.remove('ouvert');
+    document.getElementById('pdf-fond').classList.remove('actif');
+    document.getElementById('pdf-iframe').src = '';
+  }
+
+  function seDeconnecter() {
+    sessionStorage.removeItem('sb_access_token');
+    sessionStorage.removeItem('sb_user_id');
+    window.location.href = 'index.html';
+  }
+
+  // ── Init ──
+  chargerDomaines();
+</script>
+
+</body>
+</html>

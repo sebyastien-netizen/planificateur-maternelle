@@ -76,69 +76,30 @@
     .activite { font-size: 0.75rem; color: #1a1a1a; line-height: 1.3; }
     .programme { font-size: 0.65rem; color: #aaa; padding-left: 2px; line-height: 1.3; }
 
-    /* =============================================
-       TIROIR PDF
-    ============================================= */
+    /* ── Badges visuels séance ── */
+    .badge-pdf { font-size: 0.6rem; cursor: default; }
+    .badge-materiel-alerte { font-size: 0.6rem; cursor: default; }
+
+    /* ── Tiroir PDF ── */
     .pdf-fond {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.4);
-      z-index: 149;
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.4); z-index: 149;
     }
     .pdf-fond.actif { display: block; }
-
     .pdf-tiroir {
-      position: fixed;
-      top: 0;
-      right: -60vw;
-      width: 60vw;
-      height: 100vh;
-      background: #1a1a1a;
-      z-index: 150;
-      display: flex;
-      flex-direction: column;
-      transition: right 0.3s ease;
-      box-shadow: -4px 0 24px rgba(0,0,0,0.3);
+      position: fixed; top: 0; right: -60vw; width: 60vw; height: 100vh;
+      background: #1a1a1a; z-index: 150; display: flex; flex-direction: column;
+      transition: right 0.3s ease; box-shadow: -4px 0 24px rgba(0,0,0,0.3);
     }
     .pdf-tiroir.ouvert { right: 0; }
-
     .pdf-tiroir-toolbar {
-      background: #2a2a2a;
-      padding: 0.6rem 1rem;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-shrink: 0;
-      gap: 1rem;
+      background: #2a2a2a; padding: 0.6rem 1rem; display: flex;
+      align-items: center; justify-content: space-between; flex-shrink: 0; gap: 1rem;
     }
-
-    .pdf-tiroir-titre {
-      font-size: 0.82rem;
-      color: #ccc;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      flex: 1;
-    }
-
-    .pdf-tiroir-btn {
-      background: #c0392b;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      padding: 0.3rem 0.8rem;
-      cursor: pointer;
-      font-size: 0.8rem;
-      flex-shrink: 0;
-    }
+    .pdf-tiroir-titre { font-size: 0.82rem; color: #ccc; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+    .pdf-tiroir-btn { background: #c0392b; color: white; border: none; border-radius: 5px; padding: 0.3rem 0.8rem; cursor: pointer; font-size: 0.8rem; }
     .pdf-tiroir-btn:hover { background: #e74c3c; }
-
-    .pdf-tiroir iframe {
-      flex: 1;
-      border: none;
-      width: 100%;
-    }
+    .pdf-tiroir iframe { flex: 1; border: none; width: 100%; }
 
     .etat { padding: 2rem; text-align: center; color: #888; font-size: 0.85rem; }
     .etat-erreur { color: #c0392b; }
@@ -342,20 +303,26 @@
   <div class="etat" id="etat-chargement">Chargement de la semaine…</div>
 </div>
 
-<!-- Menu contextuel -->
+<!-- Menu contextuel étendu -->
 <div class="menu-contextuel" id="menu-contextuel">
-  <div class="menu-titre" id="menu-titre">Rituel</div>
+  <div class="menu-titre" id="menu-titre">Séance</div>
   <div class="menu-item" id="menu-ajouter">
-    <span class="menu-item-icone">＋</span> Ajouter un rituel ici
+    <span class="menu-item-icone">＋</span> Ajouter une séance
   </div>
-  <div class="menu-item" id="menu-remplacer">
-    <span class="menu-item-icone">⇄</span> Remplacer ce rituel
+  <div class="menu-item" id="menu-saisie-libre">
+    <span class="menu-item-icone">✏️</span> Saisie libre
+  </div>
+  <div class="menu-item" id="menu-voir-seance">
+    <span class="menu-item-icone">📋</span> Voir la séance
+  </div>
+  <div class="menu-item" id="menu-voir-materiel">
+    <span class="menu-item-icone">📎</span> Voir le matériel
   </div>
   <div class="menu-item" id="menu-pdf">
     <span class="menu-item-icone">📄</span> Voir dans le PDF
   </div>
   <div class="menu-item danger" id="menu-supprimer">
-    <span class="menu-item-icone">✕</span> Supprimer ce rituel
+    <span class="menu-item-icone">✕</span> Supprimer
   </div>
 </div>
 
@@ -369,6 +336,62 @@
     <button class="pdf-tiroir-btn" onclick="fermerTiroirPdf()">✕ Fermer</button>
   </div>
   <iframe id="pdf-iframe" src="" title="PDF"></iframe>
+</div>
+
+<!-- Tiroir saisie libre -->
+<div class="tiroir-overlay" id="saisie-overlay" onclick="fermerSaisieLibre()"></div>
+<div class="tiroir" id="tiroir-saisie" style="width:400px;max-width:95vw">
+  <div class="tiroir-header" style="background:#f0f7eb">
+    <div>
+      <h3 style="color:#2d6a4f">✏️ Saisie libre</h3>
+      <p style="color:#5a9a7a">Note personnelle pour ce créneau</p>
+    </div>
+    <button class="btn-fermer" onclick="fermerSaisieLibre()">✕</button>
+  </div>
+  <div class="tiroir-corps">
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <label style="font-size:0.8rem;color:#666">Intitulé de l'activité</label>
+      <input id="saisie-libre-texte" type="text" placeholder="Ex: Photo de classe, Réunion parents…"
+        style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:0.85rem;font-family:inherit">
+      <label style="font-size:0.8rem;color:#666">Notes (optionnel)</label>
+      <textarea id="saisie-libre-notes" rows="3" placeholder="Informations complémentaires…"
+        style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:0.85rem;font-family:inherit;resize:vertical"></textarea>
+      <button onclick="validerSaisieLibre()"
+        style="background:#2d6a4f;color:white;border:none;border-radius:8px;padding:10px;font-size:0.85rem;cursor:pointer;font-weight:600">
+        ✓ Enregistrer
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Tiroir voir séance -->
+<div class="tiroir-overlay" id="seance-overlay" onclick="fermerVoirSeance()"></div>
+<div class="tiroir" id="tiroir-seance" style="width:500px;max-width:95vw">
+  <div class="tiroir-header" style="background:#eaf1f8">
+    <div>
+      <h3 style="color:#2e5f8a">📋 Détail de la séance</h3>
+      <p id="seance-tiroir-sous-titre" style="color:#5a7fa0">—</p>
+    </div>
+    <button class="btn-fermer" onclick="fermerVoirSeance()">✕</button>
+  </div>
+  <div class="tiroir-corps" id="seance-tiroir-corps">
+    <div class="tiroir-chargement">Chargement…</div>
+  </div>
+</div>
+
+<!-- Tiroir voir matériel -->
+<div class="tiroir-overlay" id="materiel-overlay" onclick="fermerVoirMateriel()"></div>
+<div class="tiroir" id="tiroir-materiel" style="width:420px;max-width:95vw">
+  <div class="tiroir-header" style="background:#fdf0e3">
+    <div>
+      <h3 style="color:#c85a0a">📎 Matériel</h3>
+      <p id="materiel-tiroir-sous-titre" style="color:#e8730a">—</p>
+    </div>
+    <button class="btn-fermer" onclick="fermerVoirMateriel()">✕</button>
+  </div>
+  <div class="tiroir-corps" id="materiel-tiroir-corps">
+    <div class="tiroir-chargement">Chargement…</div>
+  </div>
 </div>
 
 <!-- Overlay -->
@@ -729,12 +752,12 @@ function renderGroupe(creneaux, cliquable, jour, moment, heureDebut, heureFin) {
     }
 
     const texte = c.activite || c.titre_fixe || (c.regle_id ? `[${c.regle_id}]` : '—');
+    const niv = c.niveau || '';
+    const hd = c.heure_debut?.substring(0,5) || heureDebut || '';
+    const hf = c.heure_fin?.substring(0,5) || heureFin || '';
 
-    if (cliquable && c.id) {
-      // Entrée rituel cliquable
-      const niv = c.niveau || '';
-      const hd = c.heure_debut?.substring(0,5) || heureDebut || '';
-      const hf = c.heure_fin?.substring(0,5) || heureFin || '';
+    // Toutes les séances avec un id sont cliquables
+    if (c.id) {
       html += `<div class="entree entree-cliquable"
         onclick="ouvrirMenuContextuel(event, '${c.id}', '${jour || ''}', '${moment || ''}', '${niv}', '${hd}', '${hf}')">
         <div class="entree-top">`;
@@ -748,10 +771,17 @@ function renderGroupe(creneaux, cliquable, jour, moment, heureDebut, heureFin) {
     if (c.type === 'fixe') html += '<span class="badge badge-fixe">FIXE</span>';
     if (c.role) html += `<span class="badge badge-role">${c.role}</span>`;
     html += `<span class="activite">${texte}</span>`;
+
+    // Badges visuels
+    if (c.regle_id) html += ' <span class="badge-pdf" title="PDF disponible">📄</span>';
+    if (c.notes && c.notes.toLowerCase().includes('préparer')) {
+      html += ' <span class="badge-materiel-alerte" title="Matériel à préparer">🔴</span>';
+    }
+
     html += '</div>';
 
-    if (cliquable && c.id) {
-      html += '<div class="entree-actions-hint">Cliquer pour modifier…</div>';
+    if (c.id) {
+      html += '<div class="entree-actions-hint">Cliquer pour les options…</div>';
     }
     if (c.lien_programme) html += `<div class="programme">► ${c.lien_programme}</div>`;
     if (c.notes) html += `<div class="programme" style="color:#888">${c.notes}</div>`;
@@ -764,7 +794,7 @@ function renderGroupe(creneaux, cliquable, jour, moment, heureDebut, heureFin) {
 }
 
 // =============================================
-// MENU CONTEXTUEL
+// MENU CONTEXTUEL ÉTENDU
 // =============================================
 function ouvrirMenuContextuel(event, creneauId, jour, moment, niveau, heureDeb, heureFin) {
   event.stopPropagation();
@@ -780,34 +810,258 @@ function ouvrirMenuContextuel(event, creneauId, jour, moment, niveau, heureDeb, 
   menu.classList.add('actif');
 
   // Positionner le menu près du clic
-  const x = Math.min(event.clientX, window.innerWidth - 200);
-  const y = Math.min(event.clientY, window.innerHeight - 140);
+  const x = Math.min(event.clientX, window.innerWidth - 220);
+  const y = Math.min(event.clientY, window.innerHeight - 220);
   menu.style.left = x + 'px';
   menu.style.top = y + 'px';
 
-  // Configurer les actions
   document.getElementById('menu-ajouter').onclick = (e) => {
     e.stopPropagation();
     fermerMenuContextuel();
     ouvrirTiroirSelection('ajouter', jour, moment, null, heureDeb, heureFin);
   };
-  document.getElementById('menu-remplacer').onclick = (e) => {
+
+  document.getElementById('menu-saisie-libre').onclick = (e) => {
     e.stopPropagation();
     fermerMenuContextuel();
-    ouvrirTiroirSelection('remplacer', jour, moment, creneauId, heureDeb, heureFin);
-  };
-  document.getElementById('menu-supprimer').onclick = (e) => {
-    e.stopPropagation();
-    fermerMenuContextuel();
-    confirmerSuppression(creneauId);
+    ouvrirSaisieLibre(creneauId, jour, moment);
   };
 
-  // Bouton PDF — fetch regle → séquence → ouvrir tiroir
+  document.getElementById('menu-voir-seance').onclick = (e) => {
+    e.stopPropagation();
+    fermerMenuContextuel();
+    ouvrirVoirSeance(creneauId);
+  };
+
+  document.getElementById('menu-voir-materiel').onclick = (e) => {
+    e.stopPropagation();
+    fermerMenuContextuel();
+    ouvrirVoirMateriel(creneauId);
+  };
+
   document.getElementById('menu-pdf').onclick = async (e) => {
     e.stopPropagation();
     fermerMenuContextuel();
     await ouvrirTiroirPdfDepuisCreneau(creneauId);
   };
+
+  document.getElementById('menu-supprimer').onclick = (e) => {
+    e.stopPropagation();
+    fermerMenuContextuel();
+    confirmerSuppression(creneauId);
+  };
+}
+
+// =============================================
+// SAISIE LIBRE
+// =============================================
+function ouvrirSaisieLibre(creneauId, jour, moment) {
+  document.getElementById('saisie-libre-texte').value = '';
+  document.getElementById('saisie-libre-notes').value = '';
+  etatApp.menuCreneauId = creneauId;
+  document.getElementById('saisie-overlay').classList.add('actif');
+  document.getElementById('tiroir-saisie').classList.add('actif');
+  setTimeout(() => document.getElementById('saisie-libre-texte').focus(), 300);
+}
+
+function fermerSaisieLibre() {
+  document.getElementById('saisie-overlay').classList.remove('actif');
+  document.getElementById('tiroir-saisie').classList.remove('actif');
+}
+
+async function validerSaisieLibre() {
+  const texte = document.getElementById('saisie-libre-texte').value.trim();
+  if (!texte) { alert('Veuillez saisir un intitulé.'); return; }
+  const notes = document.getElementById('saisie-libre-notes').value.trim();
+  const token = sessionStorage.getItem('sb_access_token') || SUPABASE_ANON_KEY;
+
+  try {
+    const semaine = semainesDePeriode[indexSemaineActive];
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/maternelle_creneaux`, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({
+        user_id: '6c1b1768-457b-4777-b1d9-a309f2fe2cef',
+        semaine_id: semaine.id,
+        jour: etatApp.menuJour,
+        moment: etatApp.menuMoment || 'Divers',
+        heure_debut: etatApp.menuHeureDeb || null,
+        heure_fin: etatApp.menuHeureFin || null,
+        activite: texte,
+        notes: notes || null,
+        type: 'libre',
+        periode: etatApp.menuMoment && ['Sieste PS','Réveil PS','Phonologie','Maths','Sciences / Découverte','Anglais / Arts','Écriture GS'].includes(etatApp.menuMoment) ? 'aprem' : 'matin'
+      })
+    });
+    if (!res.ok) throw new Error('Erreur lors de l\'enregistrement');
+    fermerSaisieLibre();
+    location.reload();
+  } catch (err) {
+    alert('Erreur : ' + err.message);
+  }
+}
+
+// =============================================
+// VOIR SÉANCE
+// =============================================
+async function ouvrirVoirSeance(creneauId) {
+  document.getElementById('seance-overlay').classList.add('actif');
+  document.getElementById('tiroir-seance').classList.add('actif');
+  document.getElementById('seance-tiroir-corps').innerHTML = '<div class="tiroir-chargement">Chargement…</div>';
+
+  const token = sessionStorage.getItem('sb_access_token') || SUPABASE_ANON_KEY;
+
+  try {
+    // Charger le créneau
+    const resCreneau = await fetch(
+      `${SUPABASE_URL}/rest/v1/maternelle_creneaux?id=eq.${creneauId}&select=*`,
+      { headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${token}` } }
+    );
+    const [c] = await resCreneau.json();
+    if (!c) throw new Error('Créneau introuvable');
+
+    document.getElementById('seance-tiroir-sous-titre').textContent = c.activite || '—';
+
+    let regleHtml = '';
+    if (c.regle_id) {
+      const resRegle = await fetch(
+        `${SUPABASE_URL}/rest/v1/maternelle_regles?id=eq.${c.regle_id}&select=*`,
+        { headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${token}` } }
+      );
+      const [r] = await resRegle.json();
+      if (r) {
+        regleHtml = `
+          <div style="background:#f5f5f0;border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:8px">
+            <div style="font-size:0.7rem;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:0.05em">Description pédagogique</div>
+            <div style="font-size:0.82rem;color:#333;line-height:1.6">${r.description || '—'}</div>
+            ${r.page_pdf ? `<div style="font-size:0.75rem;color:#aaa">📄 Page ${r.page_pdf} dans le PDF</div>` : ''}
+          </div>
+        `;
+      }
+    }
+
+    const niveauBadge = c.niveau === 'PS'
+      ? '<span class="badge badge-ps">PS</span>'
+      : c.niveau === 'GS'
+        ? '<span class="badge badge-gs">GS</span>'
+        : c.niveau ? `<span class="badge badge-psgs">${c.niveau}</span>` : '';
+
+    document.getElementById('seance-tiroir-corps').innerHTML = `
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          ${niveauBadge}
+          ${c.role ? `<span class="badge badge-role">${c.role}</span>` : ''}
+          ${c.type === 'fixe' ? '<span class="badge badge-fixe">FIXE</span>' : ''}
+          <span style="font-size:0.75rem;color:#aaa">${c.moment || ''} · ${c.jour || ''}</span>
+        </div>
+        <div>
+          <div style="font-size:0.7rem;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Activité</div>
+          <div style="font-size:0.92rem;font-weight:500;color:#1a1a1a">${c.activite || c.titre_fixe || '—'}</div>
+        </div>
+        ${c.notes ? `<div style="background:#fff8e1;border-radius:8px;padding:10px;font-size:0.8rem;color:#666">📝 ${c.notes}</div>` : ''}
+        ${c.lien_programme ? `<div style="font-size:0.75rem;color:#2d6a4f">► ${c.lien_programme}</div>` : ''}
+        ${regleHtml}
+      </div>
+    `;
+  } catch (err) {
+    document.getElementById('seance-tiroir-corps').innerHTML =
+      `<div class="tiroir-chargement" style="color:#c0392b">Erreur : ${err.message}</div>`;
+  }
+}
+
+function fermerVoirSeance() {
+  document.getElementById('seance-overlay').classList.remove('actif');
+  document.getElementById('tiroir-seance').classList.remove('actif');
+}
+
+// =============================================
+// VOIR MATÉRIEL
+// =============================================
+async function ouvrirVoirMateriel(creneauId) {
+  document.getElementById('materiel-overlay').classList.add('actif');
+  document.getElementById('tiroir-materiel').classList.add('actif');
+  document.getElementById('materiel-tiroir-corps').innerHTML = '<div class="tiroir-chargement">Chargement…</div>';
+
+  const token = sessionStorage.getItem('sb_access_token') || SUPABASE_ANON_KEY;
+
+  try {
+    const resCreneau = await fetch(
+      `${SUPABASE_URL}/rest/v1/maternelle_creneaux?id=eq.${creneauId}&select=regle_id,activite`,
+      { headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${token}` } }
+    );
+    const [c] = await resCreneau.json();
+
+    document.getElementById('materiel-tiroir-sous-titre').textContent = c?.activite || '—';
+
+    if (!c?.regle_id) {
+      document.getElementById('materiel-tiroir-corps').innerHTML =
+        '<div class="tiroir-chargement">Aucun matériel référencé pour cette séance.</div>';
+      return;
+    }
+
+    const resRegle = await fetch(
+      `${SUPABASE_URL}/rest/v1/maternelle_regles?id=eq.${c.regle_id}&select=description`,
+      { headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${token}` } }
+    );
+    const [r] = await resRegle.json();
+
+    // Extraire le matériel depuis la description (entre "Matériel" et la suite)
+    const desc = r?.description || '';
+    const matchMat = desc.match(/matériel[^:]*:\s*([^.]+)/i);
+    const materielBrut = matchMat ? matchMat[1] : '';
+
+    // Détecter comptines/chansons
+    const aComptine = desc.toLowerCase().includes('comptine') || desc.toLowerCase().includes('chanson');
+
+    let html = '<div style="display:flex;flex-direction:column;gap:16px">';
+
+    if (materielBrut) {
+      const items = materielBrut.split(/[,;]/).map(s => s.trim()).filter(Boolean);
+      const standard = items.filter(i => !i.match(/imprimer|plastifi|préparer|acheter|apporter/i));
+      const apreparer = items.filter(i => i.match(/imprimer|plastifi|préparer|acheter|apporter/i));
+
+      if (standard.length) {
+        html += `<div>
+          <div style="font-size:0.7rem;font-weight:700;color:#2d6a4f;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">✅ Standard (toujours en classe)</div>
+          ${standard.map(i => `<div style="font-size:0.82rem;padding:6px 0;border-bottom:1px solid #f0f0ea;color:#333">• ${i}</div>`).join('')}
+        </div>`;
+      }
+
+      if (apreparer.length) {
+        html += `<div>
+          <div style="font-size:0.7rem;font-weight:700;color:#c85a0a;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">🔴 À préparer</div>
+          ${apreparer.map(i => `<div style="font-size:0.82rem;padding:6px 0;border-bottom:1px solid #f0f0ea;color:#333">• ${i}</div>`).join('')}
+        </div>`;
+      }
+    }
+
+    if (aComptine) {
+      html += `<div style="background:#fff8e1;border-radius:8px;padding:10px;font-size:0.8rem;color:#856404">
+        🖨️ Rappel : imprimer et plastifier les paroles au format A5 pour la première utilisation.
+      </div>`;
+    }
+
+    if (!materielBrut && !aComptine) {
+      html += '<div class="tiroir-chargement">Matériel non détaillé pour cette séance.</div>';
+    }
+
+    html += '</div>';
+    document.getElementById('materiel-tiroir-corps').innerHTML = html;
+
+  } catch (err) {
+    document.getElementById('materiel-tiroir-corps').innerHTML =
+      `<div class="tiroir-chargement" style="color:#c0392b">Erreur : ${err.message}</div>`;
+  }
+}
+
+function fermerVoirMateriel() {
+  document.getElementById('materiel-overlay').classList.remove('actif');
+  document.getElementById('tiroir-materiel').classList.remove('actif');
 }
 
 // =============================================
@@ -815,46 +1069,31 @@ function ouvrirMenuContextuel(event, creneauId, jour, moment, niveau, heureDeb, 
 // =============================================
 async function ouvrirTiroirPdfDepuisCreneau(creneauId) {
   const token = sessionStorage.getItem('sb_access_token') || SUPABASE_ANON_KEY;
-
   try {
-    // 1. Récupérer le créneau pour obtenir regle_id
     const resCreneau = await fetch(
       `${SUPABASE_URL}/rest/v1/maternelle_creneaux?id=eq.${creneauId}&select=regle_id,activite`,
       { headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${token}` } }
     );
     const [creneau] = await resCreneau.json();
-    if (!creneau?.regle_id) {
-      alert('Aucun lien PDF disponible pour cette séance.');
-      return;
-    }
+    if (!creneau?.regle_id) { alert('Aucun lien PDF disponible pour cette séance.'); return; }
 
-    // 2. Récupérer la règle pour obtenir sequence_id et page_pdf
     const resRegle = await fetch(
       `${SUPABASE_URL}/rest/v1/maternelle_regles?id=eq.${creneau.regle_id}&select=sequence_id,page_pdf`,
       { headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${token}` } }
     );
     const [regle] = await resRegle.json();
-    if (!regle?.sequence_id) {
-      alert('Aucune séquence associée à cette règle.');
-      return;
-    }
+    if (!regle?.sequence_id) { alert('Aucune séquence associée à cette règle.'); return; }
 
-    // 3. Récupérer la séquence pour obtenir pdf_fichier et pdf_page_debut
     const resSeq = await fetch(
       `${SUPABASE_URL}/rest/v1/maternelle_sequences?id=eq.${regle.sequence_id}&select=pdf_fichier,pdf_page_debut,titre`,
       { headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${token}` } }
     );
     const [seq] = await resSeq.json();
-    if (!seq?.pdf_fichier) {
-      alert('PDF non disponible pour cette séquence.');
-      return;
-    }
+    if (!seq?.pdf_fichier) { alert('PDF non disponible pour cette séquence.'); return; }
 
-    // 4. Ouvrir le tiroir à la page de la règle (ou page_debut de la séquence)
     const page = regle.page_pdf || seq.pdf_page_debut || 1;
     const titre = creneau.activite || seq.titre || 'Séance';
     ouvrirTiroirPdf(seq.pdf_fichier, page, titre);
-
   } catch (err) {
     alert('Erreur lors du chargement du PDF : ' + err.message);
   }

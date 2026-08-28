@@ -79,7 +79,27 @@
     /* ── Badges visuels séance ── */
     .badge-pdf { font-size: 0.6rem; cursor: default; }
     .badge-materiel-alerte { font-size: 0.6rem; cursor: default; }
-
+/* ── Indicateur statut séance ── */
+.statut-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  border: 1.5px solid #ddd;
+  background: white;
+  cursor: pointer;
+  font-size: 0.65rem;
+  flex-shrink: 0;
+  transition: all 0.15s;
+  margin-left: auto;
+  user-select: none;
+}
+.statut-btn:hover { border-color: #aaa; }
+.statut-btn.fait { background: #d1fae5; border-color: #2d6a4f; }
+.statut-btn.non_fait { background: #fee2e2; border-color: #c0392b; }
+.statut-btn.a_refaire { background: #fff3cd; border-color: #d97706; }
     /* ── Tiroir PDF ── */
     .pdf-fond {
       display: none; position: fixed; inset: 0;
@@ -318,6 +338,9 @@
   <div class="menu-item" id="menu-voir-materiel">
     <span class="menu-item-icone">📎</span> Voir le matériel
   </div>
+  <div class="menu-item" id="menu-statut-refaire">
+  <span class="menu-item-icone">🔁</span> Marquer À refaire
+</div>
   <div class="menu-item" id="menu-pdf">
     <span class="menu-item-icone">📄</span> Voir dans le PDF
   </div>
@@ -758,6 +781,16 @@ function renderGroupe(creneaux, cliquable, jour, moment, heureDebut, heureFin) {
 
     // Toutes les séances avec un id sont cliquables
     if (c.id) {
+      const statut = c.statut || 'a_faire';
+      const estFixe = c.type === 'fixe';
+      const statutEmoji = { a_faire: '', fait: '✓', non_fait: '✕', a_refaire: '↺' }[statut] || '';
+      const statutTitle = { a_faire: 'À faire', fait: 'Fait ✅', non_fait: 'Non fait ❌', a_refaire: 'À refaire 🔁' }[statut] || '';
+      const btnStatut = estFixe ? '' :
+        `<span class="statut-btn ${statut !== 'a_faire' ? statut : ''}"
+          data-statut="${statut}"
+          title="${statutTitle}"
+          onclick="changerStatut(event, '${c.id}', '${statut}')">${statutEmoji}</span>`;
+
       html += `<div class="entree entree-cliquable"
         onclick="ouvrirMenuContextuel(event, '${c.id}', '${jour || ''}', '${moment || ''}', '${niv}', '${hd}', '${hf}')">
         <div class="entree-top">`;
@@ -774,6 +807,7 @@ function renderGroupe(creneaux, cliquable, jour, moment, heureDebut, heureFin) {
 
     // Badges visuels
     if (c.regle_id) html += ' <span class="badge-pdf" title="PDF disponible">📄</span>';
+    if (!estFixe) html += ` ${btnStatut}`;
     if (c.notes && c.notes.toLowerCase().includes('préparer')) {
       html += ' <span class="badge-materiel-alerte" title="Matériel à préparer">🔴</span>';
     }
@@ -849,6 +883,11 @@ function ouvrirMenuContextuel(event, creneauId, jour, moment, niveau, heureDeb, 
     e.stopPropagation();
     fermerMenuContextuel();
     confirmerSuppression(creneauId);
+  };
+    document.getElementById('menu-statut-refaire').onclick = (e) => {
+    e.stopPropagation();
+    fermerMenuContextuel();
+    marquerARefaire(creneauId);
   };
 }
 
@@ -1125,7 +1164,68 @@ function ouvrirMenuAjouter(event, creneauId, jour, moment, niveau, heureDeb, heu
 function fermerMenuContextuel() {
   document.getElementById('menu-contextuel').classList.remove('actif');
 }
+// =============================================
+// STATUT SÉANCE
+// =============================================
+async function changerStatut(event, creneauId, statutActuel) {
+  event.stopPropagation();
 
+  // Cycle : a_faire → fait → non_fait → a_faire
+  const cycle = { 'a_faire': 'fait', 'fait': 'non_fait', 'non_fait': 'a_faire' };
+  const nouveauStatut = cycle[statutActuel] || 'fait';
+
+  const token = sessionStorage.getItem('sb_access_token') || SUPABASE_ANON_KEY;
+
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/maternelle_creneaux?id=eq.${creneauId}`,
+      {
+        method: 'PATCH',
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify({ statut: nouveauStatut })
+      }
+    );
+    if (!res.ok) throw new Error('Erreur PATCH statut');
+
+    // Mise à jour visuelle sans rechargement
+    const btn = event.target;
+    btn.dataset.statut = nouveauStatut;
+    btn.className = `statut-btn${nouveauStatut !== 'a_faire' ? ' ' + nouveauStatut : ''}`;
+    btn.title = { a_faire: 'À faire', fait: 'Fait ✅', non_fait: 'Non fait ❌' }[nouveauStatut];
+    btn.textContent = { a_faire: '', fait: '✓', non_fait: '✕' }[nouveauStatut];
+
+  } catch (err) {
+    alert('Erreur statut : ' + err.message);
+  }
+}
+
+async function marquerARefaire(creneauId) {
+  const token = sessionStorage.getItem('sb_access_token') || SUPABASE_ANON_KEY;
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/maternelle_creneaux?id=eq.${creneauId}`,
+      {
+        method: 'PATCH',
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify({ statut: 'a_refaire' })
+      }
+    );
+    if (!res.ok) throw new Error('Erreur PATCH statut');
+    location.reload();
+  } catch (err) {
+    alert('Erreur : ' + err.message);
+  }
+}
 // =============================================
 // SUPPRESSION
 // =============================================

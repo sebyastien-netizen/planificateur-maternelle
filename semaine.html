@@ -1244,23 +1244,68 @@ async function marquerARefaire(creneauId) {
   }
 }
 // =============================================
-// SUPPRESSION
+// POPUP SUPPRESSION
 // =============================================
-async function confirmerSuppression(creneauId) {
-  if (!confirm('Supprimer ce rituel de la semaine ?')) return;
+function confirmerSuppression(creneauId) {
+  etatApp.menuCreneauId = creneauId;
+
+  const entree = document.querySelector(`.statut-btn[onclick*="${creneauId}"]`);
+  const label = entree
+    ? entree.closest('.entree')?.querySelector('.activite')?.textContent || '—'
+    : '—';
+
+  document.getElementById('popup-seance-label').textContent = label;
+  document.getElementById('popup-suppression').classList.add('actif');
+}
+
+async function executerSuppression(statutPlanification) {
+  const creneauId = etatApp.menuCreneauId;
+  if (!creneauId) return;
+
+  const token = sessionStorage.getItem('sb_access_token') || SUPABASE_ANON_KEY;
 
   try {
-    const res = await fetch('/api/rituels-supprimer', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ creneau_id: creneauId })
-    });
-    if (!res.ok) { const e = await res.json(); throw new Error(e.error); }
-    // Recharger la semaine
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/maternelle_creneaux?id=eq.${creneauId}`,
+      {
+        method: 'PATCH',
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify({ statut_planification: statutPlanification })
+      }
+    );
+    if (!res.ok) throw new Error('Erreur lors de la mise à jour');
+
+    fermerPopupSuppression();
+    mettreAJourBadgeAttente(statutPlanification);
     location.reload();
+
   } catch (err) {
-    alert(`Erreur lors de la suppression : ${err.message}`);
+    alert('Erreur : ' + err.message);
   }
+}
+
+function fermerPopupSuppression() {
+  document.getElementById('popup-suppression').classList.remove('actif');
+}
+
+function mettreAJourBadgeAttente(statutPlanification) {
+  if (statutPlanification !== 'en_attente') return;
+  let badge = document.getElementById('badge-attente');
+  if (!badge) {
+    const headerActions = document.querySelector('.header-actions');
+    badge = document.createElement('span');
+    badge.id = 'badge-attente';
+    badge.style.cssText = 'font-size:0.78rem;background:#fff3cd;color:#c85a0a;border:1px solid #fcd34d;padding:5px 12px;border-radius:8px;font-weight:600';
+    headerActions.insertBefore(badge, headerActions.firstChild);
+  }
+  const actuel = parseInt(badge.dataset.count || '0') + 1;
+  badge.dataset.count = actuel;
+  badge.textContent = `⏳ ${actuel} en attente`;
 }
 
 // =============================================

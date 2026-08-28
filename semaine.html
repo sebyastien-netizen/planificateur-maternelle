@@ -848,7 +848,8 @@ function renderGroupe(creneaux, cliquable, jour, moment, heureDebut, heureFin) {
     else if (c.niveau === 'PS+GS') html += '<span class="badge badge-ps">PS</span><span class="badge badge-gs">GS</span>';
     if (c.type === 'fixe') html += '<span class="badge badge-fixe">FIXE</span>';
     if (c.role) html += `<span class="badge badge-role">${c.role}</span>`;
-    html += `<span class="activite">${texte}</span>`;
+   const estVide = !c.activite && !c.titre_fixe && !c.regle_id && c.type === 'atelier';
+html += `<span class="activite"${estVide ? ' style="color:#bbb;font-style:italic;font-size:0.7rem"' : ''}>${texte}</span>`;
 
     // Badges visuels
     if (c.regle_id) html += ' <span class="badge-pdf" title="PDF disponible">📄</span>';

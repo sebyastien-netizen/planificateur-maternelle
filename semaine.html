@@ -776,21 +776,21 @@ function renderGroupe(creneaux, cliquable, jour, moment, heureDebut, heureFin) {
 
     const texte = c.activite || c.titre_fixe || (c.regle_id ? `[${c.regle_id}]` : '—');
     const niv = c.niveau || '';
-    const estFixe = c.type === 'fixe';
+        const estFixe = c.type === 'fixe';
+    const statut = c.statut || 'a_faire';
+    const statutEmoji = { a_faire: '', fait: '✓', non_fait: '✕', a_refaire: '↺' }[statut] || '';
+    const statutTitle = { a_faire: 'À faire', fait: 'Fait ✅', non_fait: 'Non fait ❌', a_refaire: 'À refaire 🔁' }[statut] || '';
+    const btnStatut = (c.id && !estFixe)
+      ? `<span class="statut-btn ${statut !== 'a_faire' ? statut : ''}"
+          data-statut="${statut}"
+          title="${statutTitle}"
+          onclick="changerStatut(event, '${c.id}', '${statut}')">${statutEmoji}</span>`
+      : '';
     const hd = c.heure_debut?.substring(0,5) || heureDebut || '';
     const hf = c.heure_fin?.substring(0,5) || heureFin || '';
 
     // Toutes les séances avec un id sont cliquables
     if (c.id) {
-      const statut = c.statut || 'a_faire';
-      const statutEmoji = { a_faire: '', fait: '✓', non_fait: '✕', a_refaire: '↺' }[statut] || '';
-      const statutTitle = { a_faire: 'À faire', fait: 'Fait ✅', non_fait: 'Non fait ❌', a_refaire: 'À refaire 🔁' }[statut] || '';
-      const btnStatut = estFixe ? '' :
-        `<span class="statut-btn ${statut !== 'a_faire' ? statut : ''}"
-          data-statut="${statut}"
-          title="${statutTitle}"
-          onclick="changerStatut(event, '${c.id}', '${statut}')">${statutEmoji}</span>`;
-
       html += `<div class="entree entree-cliquable"
         onclick="ouvrirMenuContextuel(event, '${c.id}', '${jour || ''}', '${moment || ''}', '${niv}', '${hd}', '${hf}')">
         <div class="entree-top">`;

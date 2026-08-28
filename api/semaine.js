@@ -35,7 +35,7 @@ export default async function handler(req, res) {
 
     // 2. Récupérer les créneaux
     const resCreneaux = await fetch(
-      `${SUPABASE_URL}/rest/v1/maternelle_creneaux?semaine_id=eq.${id}&select=id,jour,heure_debut,heure_fin,moment,groupe,niveau,role,notes,lien_programme,activite,regle_id,periode,type,titre_fixe&order=heure_debut.asc,id.asc`,
+           `${SUPABASE_URL}/rest/v1/maternelle_creneaux?semaine_id=eq.${id}&statut_planification=eq.actif&select=id,jour,heure_debut,heure_fin,moment,groupe,niveau,role,notes,lien_programme,activite,regle_id,periode,type,titre_fixe,statut,statut_planification&order=heure_debut.asc,id.asc`,
       { headers }
     );
     if (!resCreneaux.ok) throw new Error(`Erreur Supabase créneaux : ${resCreneaux.status}`);

@@ -934,6 +934,7 @@ async function validerSaisieLibre() {
         activite: texte,
         notes: notes || null,
         type: 'libre',
+        statut: 'a_faire',
         periode: etatApp.menuMoment && ['Sieste PS','Réveil PS','Phonologie','Maths','Sciences / Découverte','Anglais / Arts','Écriture GS'].includes(etatApp.menuMoment) ? 'aprem' : 'matin'
       })
     });
@@ -1171,8 +1172,9 @@ async function changerStatut(event, creneauId, statutActuel) {
   event.stopPropagation();
 
   // Cycle : a_faire → fait → non_fait → a_faire
-  const cycle = { 'a_faire': 'fait', 'fait': 'non_fait', 'non_fait': 'a_faire' };
-  const nouveauStatut = cycle[statutActuel] || 'fait';
+  const statutActuel2 = btn.dataset.statut || statutActuel;
+  const cycle = { 'a_faire': 'fait', 'fait': 'non_fait', 'non_fait': 'a_faire', 'a_refaire': 'a_faire' };
+  const nouveauStatut = cycle[statutActuel2] || 'fait';
 
   const token = sessionStorage.getItem('sb_access_token') || SUPABASE_ANON_KEY;
 
@@ -1197,7 +1199,8 @@ async function changerStatut(event, creneauId, statutActuel) {
     btn.dataset.statut = nouveauStatut;
     btn.className = `statut-btn${nouveauStatut !== 'a_faire' ? ' ' + nouveauStatut : ''}`;
     btn.title = { a_faire: 'À faire', fait: 'Fait ✅', non_fait: 'Non fait ❌' }[nouveauStatut];
-    btn.textContent = { a_faire: '', fait: '✓', non_fait: '✕' }[nouveauStatut];
+        btn.textContent = { a_faire: '', fait: '✓', non_fait: '✕', a_refaire: '↺' }[nouveauStatut];
+    btn.title = { a_faire: 'À faire', fait: 'Fait ✅', non_fait: 'Non fait ❌', a_refaire: 'À refaire 🔁' }[nouveauStatut];
 
   } catch (err) {
     alert('Erreur statut : ' + err.message);

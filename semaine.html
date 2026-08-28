@@ -938,7 +938,10 @@ async function validerSaisieLibre() {
         periode: etatApp.menuMoment && ['Sieste PS','Réveil PS','Phonologie','Maths','Sciences / Découverte','Anglais / Arts','Écriture GS'].includes(etatApp.menuMoment) ? 'aprem' : 'matin'
       })
     });
-    if (!res.ok) throw new Error('Erreur lors de l\'enregistrement');
+        if (!res.ok) {
+      const detail = await res.json();
+      throw new Error(JSON.stringify(detail));
+    }
     fermerSaisieLibre();
     location.reload();
   } catch (err) {
@@ -1171,7 +1174,7 @@ function fermerMenuContextuel() {
 async function changerStatut(event, creneauId, statutActuel) {
   event.stopPropagation();
 
-  // Cycle : a_faire → fait → non_fait → a_faire
+  const btn = event.currentTarget;
   const statutActuel2 = btn.dataset.statut || statutActuel;
   const cycle = { 'a_faire': 'fait', 'fait': 'non_fait', 'non_fait': 'a_faire', 'a_refaire': 'a_faire' };
   const nouveauStatut = cycle[statutActuel2] || 'fait';

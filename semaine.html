@@ -1198,11 +1198,10 @@ async function changerStatut(event, creneauId, statutActuel) {
     if (!res.ok) throw new Error('Erreur PATCH statut');
 
     // Mise à jour visuelle sans rechargement
-    const btn = event.target;
+    // Mise à jour visuelle sans rechargement
     btn.dataset.statut = nouveauStatut;
     btn.className = `statut-btn${nouveauStatut !== 'a_faire' ? ' ' + nouveauStatut : ''}`;
-    btn.title = { a_faire: 'À faire', fait: 'Fait ✅', non_fait: 'Non fait ❌' }[nouveauStatut];
-        btn.textContent = { a_faire: '', fait: '✓', non_fait: '✕', a_refaire: '↺' }[nouveauStatut];
+    btn.textContent = { a_faire: '', fait: '✓', non_fait: '✕', a_refaire: '↺' }[nouveauStatut];
     btn.title = { a_faire: 'À faire', fait: 'Fait ✅', non_fait: 'Non fait ❌', a_refaire: 'À refaire 🔁' }[nouveauStatut];
 
   } catch (err) {

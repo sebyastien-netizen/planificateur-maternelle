@@ -1640,6 +1640,24 @@ function naviguerSemaine(semaineId) {
 // =============================================
 chargerSemaine();
 </script>
-
+<!-- Popup suppression -->
+<div class="popup-fond" id="popup-suppression">
+  <div class="popup-boite">
+    <div class="popup-titre">Que faire de cette séance ?</div>
+    <div class="popup-seance" id="popup-seance-label">—</div>
+    <div class="popup-question">Cette séance disparaîtra du cahier journal.</div>
+    <div class="popup-actions">
+      <button class="popup-btn retirer" onclick="executerSuppression('en_attente')">
+        <span class="popup-btn-label">📤 Retirer</span>
+        <span class="popup-btn-desc">Séance conservée — à replacer via "Organiser mes créneaux"</span>
+      </button>
+      <button class="popup-btn sommeil" onclick="executerSuppression('en_sommeil')">
+        <span class="popup-btn-label">💤 Mettre en sommeil</span>
+        <span class="popup-btn-desc">Séance mise de côté — réactivable depuis l'encyclopédie</span>
+      </button>
+    </div>
+    <button class="popup-annuler" onclick="fermerPopupSuppression()">Annuler</button>
+  </div>
+</div>
 </body>
 </html>

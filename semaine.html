@@ -819,7 +819,7 @@ function renderGroupe(creneaux, cliquable, jour, moment, heureDebut, heureFin) {
       html += '<hr class="separateur">';
     }
 
-    const texte = c.activite || c.titre_fixe || (c.regle_id ? `[${c.regle_id}]` : '—');
+    const texte = c.activite || c.titre_fixe || (c.regle_id ? `[${c.regle_id}]` : (c.type === 'atelier' ? 'À remplir' : '—'));
     const niv = c.niveau || '';
         const estFixe = c.type === 'fixe';
     const statut = c.statut || 'a_faire';

@@ -15,7 +15,20 @@
     .btn-retour { font-size: 0.85rem; color: #2d6a4f; text-decoration: none; border: 1px solid #2d6a4f; padding: 6px 14px; border-radius: 8px; }
     .btn-rituels { font-size: 0.85rem; color: #6b4fa0; background: #f0ecf8; border: 1px solid #c4b0e0; padding: 6px 14px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 6px; }
     .btn-rituels:hover { background: #e4d9f5; }
+.btn-bilan { font-size: 0.85rem; color: #c85a0a; background: #fff3cd; border: 1px solid #fcd34d; padding: 6px 14px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+.btn-bilan:hover { background: #fef3c7; }
 
+/* Tiroir bilan */
+.bilan-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-bottom: 1px solid #f0f0ee; }
+.bilan-item:last-child { border-bottom: none; }
+.bilan-item-texte { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.bilan-item-activite { font-size: 0.82rem; color: #1a1a1a; font-weight: 500; }
+.bilan-item-meta { font-size: 0.7rem; color: #aaa; }
+.bilan-btn-statut { width: 28px; height: 28px; border-radius: 6px; border: 1.5px solid #ddd; background: white; cursor: pointer; font-size: 0.75rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.15s; }
+.bilan-btn-statut.fait { background: #d1fae5; border-color: #2d6a4f; color: #2d6a4f; }
+.bilan-btn-statut.non_fait { background: #fee2e2; border-color: #c0392b; color: #c0392b; }
+.bilan-btn-statut.a_refaire { background: #fff3cd; border-color: #d97706; color: #d97706; }
+.bilan-section-titre { font-size: 0.7rem; font-weight: 700; color: #aaa; text-transform: uppercase; letter-spacing: 0.05em; margin: 12px 0 6px; }
     .semaine-wrapper { background: white; border-radius: 12px; border: 1px solid #e5e5e0; overflow: hidden; }
     .semaine-header { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.25rem; border-bottom: 1px solid #e5e5e0; background: #fafaf8; }
     .semaine-titre h2 { font-size: 0.95rem; font-weight: 500; color: #1a1a1a; }
@@ -314,6 +327,7 @@
     <button class="btn-nav" id="btn-next" onclick="naviguerSemaine(1)" disabled>▶</button>
   </div>
   <div class="header-actions">
+        <button class="btn-bilan" onclick="ouvrirBilanJour()">📊 Bilan du jour</button>
     <button class="btn-rituels" onclick="ouvrirTiroir()">📋 Rituels de la semaine</button>
     <a href="accueil.html" class="btn-retour">← Retour</a>
   </div>
@@ -386,7 +400,20 @@
     </div>
   </div>
 </div>
-
+<!-- Tiroir bilan du jour -->
+<div class="tiroir-overlay" id="bilan-overlay" onclick="fermerBilanJour()"></div>
+<div class="tiroir" id="tiroir-bilan" style="width:420px;max-width:95vw">
+  <div class="tiroir-header" style="background:#fff8e1">
+    <div>
+      <h3 style="color:#c85a0a">📊 Bilan du jour</h3>
+      <p id="bilan-sous-titre" style="color:#d97706">Chargement…</p>
+    </div>
+    <button class="btn-fermer" onclick="fermerBilanJour()">✕</button>
+  </div>
+  <div class="tiroir-corps" id="bilan-corps">
+    <div class="tiroir-chargement">Chargement…</div>
+  </div>
+</div>
 <!-- Tiroir voir séance -->
 <div class="tiroir-overlay" id="seance-overlay" onclick="fermerVoirSeance()"></div>
 <div class="tiroir" id="tiroir-seance" style="width:500px;max-width:95vw">
@@ -1106,7 +1133,132 @@ function fermerVoirMateriel() {
   document.getElementById('materiel-overlay').classList.remove('actif');
   document.getElementById('tiroir-materiel').classList.remove('actif');
 }
+// =============================================
+// BILAN DU JOUR
+// =============================================
+function jourCourantClasse() {
+  const today = new Date();
+  const dow = today.getDay(); // 0=dim, 1=lun, 2=mar, 3=mer, 4=jeu, 5=ven
+  if (dow === 2) return 'mardi';
+  if (dow === 4) return 'jeudi';
+  if (dow === 5) return 'vendredi';
+  // Hors jour de classe → dernier jour travaillé
+  if (dow === 6 || dow === 0) return 'vendredi';
+  if (dow === 1) return 'vendredi'; // lundi → vendredi précédent
+  if (dow === 3) return 'mardi';    // mercredi → mardi
+  return 'vendredi';
+}
 
+async function ouvrirBilanJour() {
+  document.getElementById('bilan-overlay').classList.add('actif');
+  document.getElementById('tiroir-bilan').classList.add('actif');
+
+  const jour = jourCourantClasse();
+  const jourLabel = { mardi: 'Mardi', jeudi: 'Jeudi', vendredi: 'Vendredi' }[jour];
+  document.getElementById('bilan-sous-titre').textContent = jourLabel;
+  document.getElementById('bilan-corps').innerHTML = '<div class="tiroir-chargement">Chargement…</div>';
+
+  const token = sessionStorage.getItem('sb_access_token') || SUPABASE_ANON_KEY;
+  const semaine = semainesDePeriode[indexSemaineActive];
+  if (!semaine) return;
+
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/maternelle_creneaux?semaine_id=eq.${semaine.id}&jour=eq.${jour}&type=neq.fixe&select=id,activite,titre_fixe,moment,role,niveau,statut,heure_debut&order=heure_debut.asc,id.asc`,
+      { headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${token}` } }
+    );
+    const creneaux = await res.json();
+
+    if (!creneaux.length) {
+      document.getElementById('bilan-corps').innerHTML =
+        '<div class="tiroir-chargement">Aucune séance variable ce jour.</div>';
+      return;
+    }
+
+    // Grouper par moment
+    const parMoment = {};
+    for (const c of creneaux) {
+      const m = c.moment || 'Divers';
+      if (!parMoment[m]) parMoment[m] = [];
+      parMoment[m].push(c);
+    }
+
+    let html = '';
+    for (const [moment, cs] of Object.entries(parMoment)) {
+      html += `<div class="bilan-section-titre">${moment}</div>`;
+      for (const c of cs) {
+        const texte = c.activite || c.titre_fixe || '—';
+        const meta = [
+          c.heure_debut?.substring(0,5),
+          c.role,
+          c.niveau
+        ].filter(Boolean).join(' · ');
+        const statut = c.statut || 'a_faire';
+        const emoji = { a_faire: '○', fait: '✓', non_fait: '✕', a_refaire: '↺' }[statut];
+        html += `<div class="bilan-item" id="bilan-item-${c.id}">
+          <button class="bilan-btn-statut ${statut !== 'a_faire' ? statut : ''}"
+            onclick="changerStatutBilan(event, '${c.id}', '${statut}')">${emoji}</button>
+          <div class="bilan-item-texte">
+            <div class="bilan-item-activite">${texte}</div>
+            ${meta ? `<div class="bilan-item-meta">${meta}</div>` : ''}
+          </div>
+        </div>`;
+      }
+    }
+
+    document.getElementById('bilan-corps').innerHTML = html;
+
+  } catch (err) {
+    document.getElementById('bilan-corps').innerHTML =
+      `<div class="tiroir-chargement" style="color:#c0392b">Erreur : ${err.message}</div>`;
+  }
+}
+
+async function changerStatutBilan(event, creneauId, statutActuel) {
+  event.stopPropagation();
+  const btn = event.currentTarget;
+  const cycle = { 'a_faire': 'fait', 'fait': 'non_fait', 'non_fait': 'a_faire', 'a_refaire': 'a_faire' };
+  const nouveauStatut = cycle[btn.dataset.statut || statutActuel] || 'fait';
+
+  const token = sessionStorage.getItem('sb_access_token') || SUPABASE_ANON_KEY;
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/maternelle_creneaux?id=eq.${creneauId}`,
+      {
+        method: 'PATCH',
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify({ statut: nouveauStatut })
+      }
+    );
+    if (!res.ok) throw new Error('Erreur PATCH statut');
+
+    // Mise à jour visuelle
+    btn.dataset.statut = nouveauStatut;
+    btn.className = `bilan-btn-statut${nouveauStatut !== 'a_faire' ? ' ' + nouveauStatut : ''}`;
+    btn.textContent = { a_faire: '○', fait: '✓', non_fait: '✕', a_refaire: '↺' }[nouveauStatut];
+
+    // Sync le bouton statut dans la grille si visible
+    const btnGrille = document.querySelector(`.statut-btn[onclick*="${creneauId}"]`);
+    if (btnGrille) {
+      btnGrille.dataset.statut = nouveauStatut;
+      btnGrille.className = `statut-btn${nouveauStatut !== 'a_faire' ? ' ' + nouveauStatut : ''}`;
+      btnGrille.textContent = { a_faire: '', fait: '✓', non_fait: '✕', a_refaire: '↺' }[nouveauStatut];
+    }
+
+  } catch (err) {
+    alert('Erreur : ' + err.message);
+  }
+}
+
+function fermerBilanJour() {
+  document.getElementById('bilan-overlay').classList.remove('actif');
+  document.getElementById('tiroir-bilan').classList.remove('actif');
+}
 // =============================================
 // TIROIR PDF
 // =============================================

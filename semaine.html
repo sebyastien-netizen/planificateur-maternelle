@@ -776,13 +776,13 @@ function renderGroupe(creneaux, cliquable, jour, moment, heureDebut, heureFin) {
 
     const texte = c.activite || c.titre_fixe || (c.regle_id ? `[${c.regle_id}]` : '—');
     const niv = c.niveau || '';
+    const estFixe = c.type === 'fixe';
     const hd = c.heure_debut?.substring(0,5) || heureDebut || '';
     const hf = c.heure_fin?.substring(0,5) || heureFin || '';
 
     // Toutes les séances avec un id sont cliquables
     if (c.id) {
       const statut = c.statut || 'a_faire';
-      const estFixe = c.type === 'fixe';
       const statutEmoji = { a_faire: '', fait: '✓', non_fait: '✕', a_refaire: '↺' }[statut] || '';
       const statutTitle = { a_faire: 'À faire', fait: 'Fait ✅', non_fait: 'Non fait ❌', a_refaire: 'À refaire 🔁' }[statut] || '';
       const btnStatut = estFixe ? '' :

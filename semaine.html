@@ -2021,17 +2021,52 @@ function genererPlanSimule() {
 }
 
 // ── Ouvrir l'interface ────────────────────────────────────────────────
-function ouvrirOrganiser() {
-  // Charger le plan simulé
-  orgEtat.plan = genererPlanSimule();
+async function ouvrirOrganiser() {
+  // Ouvrir l'interface immédiatement avec état de chargement
+  orgEtat.plan = null;
   orgEtat.semaineActive = 0;
   orgEtat.jourActif = 0;
   orgEtat.validations = {};
 
   document.getElementById('organiser-fond').classList.add('actif');
-  renderOrgNavSemaines();
-  renderOrgJours();
-  renderOrgDetail();
+  document.getElementById('org-nav-semaines').innerHTML = '<span style="font-size:0.78rem;color:#888">Chargement…</span>';
+  document.getElementById('org-col-jours').innerHTML = '';
+  document.getElementById('org-marie-texte').textContent = 'Marie analyse la progression et prépare ses propositions…';
+  document.getElementById('org-marie-conseil').textContent = '';
+  document.getElementById('org-creneaux-liste').innerHTML = '<div style="padding:2rem;text-align:center;color:#888;font-size:0.82rem">Analyse en cours…</div>';
+
+  // Récupérer la période active
+  const periodeId = document.getElementById('select-periode').value;
+  if (!periodeId) {
+    document.getElementById('org-creneaux-liste').innerHTML =
+      '<div style="padding:2rem;text-align:center;color:#c0392b;font-size:0.82rem">⚠ Aucune période sélectionnée.</div>';
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/marie-ateliers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ periode_id: periodeId })
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || `Erreur ${res.status}`);
+    }
+
+    const data = await res.json();
+    orgEtat.plan = data.plan;
+
+    renderOrgNavSemaines();
+    renderOrgJours();
+    renderOrgDetail();
+
+  } catch (err) {
+    document.getElementById('org-creneaux-liste').innerHTML =
+      `<div style="padding:2rem;text-align:center;color:#c0392b;font-size:0.82rem">⚠ Erreur : ${err.message}</div>`;
+    document.getElementById('org-marie-texte').textContent = 'Une erreur est survenue lors de l\'analyse.';
+  }
 }
 
 function fermerOrganiser() {
@@ -2042,6 +2077,7 @@ function fermerOrganiser() {
 // ── Navigation semaines ───────────────────────────────────────────────
 function renderOrgNavSemaines() {
   const { plan, semaineActive, validations } = orgEtat;
+  if (!plan) return;
   let html = '';
   plan.semaines.forEach((s, i) => {
     const joursValides = s.jours.filter(j => {
@@ -2073,6 +2109,7 @@ function changerSemaine(index) {
 // ── Colonne jours ─────────────────────────────────────────────────────
 function renderOrgJours() {
   const { plan, semaineActive, jourActif, validations } = orgEtat;
+  if (!plan) return;
   const semaine = plan.semaines[semaineActive];
   let html = '';
   semaine.jours.forEach((j, i) => {
@@ -2104,6 +2141,7 @@ function changerJour(index) {
 // ── Détail journée ────────────────────────────────────────────────────
 function renderOrgDetail() {
   const { plan, semaineActive, jourActif, validations } = orgEtat;
+  if (!plan) return;
   const semaine = plan.semaines[semaineActive];
   const jour = semaine.jours[jourActif];
   const key = `${semaine.semaine_id}_${jour.jour}`;

@@ -35,17 +35,15 @@ Chaque journée de classe comporte 2 rotations d'ateliers (R1 et R2) simultanée
 - AUTO PS (autonome)
 
 R1 et R2 contiennent exactement les mêmes 4 séances. Les sous-groupes A↔B permutent entre R1 et R2. ENS et ATSEM gardent la même séance entre R1 et R2.
+
 Un jour = exactement 4 créneaux DISTINCTS à remplir :
 - 1 × ENS GS → type_dispositif OBLIGATOIREMENT 'dirigé', niveau GS
 - 1 × ATSEM PS → type_dispositif OBLIGATOIREMENT 'semi-dirigé', niveau PS
 - 1 × AUTO GS → type_dispositif OBLIGATOIREMENT 'autonome', niveau GS
 - 1 × AUTO PS → type_dispositif OBLIGATOIREMENT 'autonome', niveau PS
 
-R1 et R2 contiennent les MÊMES 4 séances — tu proposes UNE séance par rôle+niveau, jamais deux fois le même rôle dans la même journée. Ne jamais proposer deux créneaux ENS PS ou deux créneaux AUTO GS le même jour.
-
-7. Si aucune séance du bon type_dispositif n'est disponible pour un créneau, utilise type="vide" plutôt que de forcer une séance avec le mauvais type_dispositif. Mieux vaut un créneau vide qu'une erreur de dispositif.
-
-8. Tu dois produire une entrée pour CHAQUE jour de classe de CHAQUE semaine. Si une semaine a les jours ['mardi', 'jeudi', 'vendredi'], le JSON doit contenir 3 objets dans "jours". Ne jamais omettre un jour.
+Les 4 rôles sont DIFFÉRENTS. Ne jamais répéter le même rôle+niveau deux fois dans la même journée.
+R1 et R2 contiennent les mêmes séances — tu proposes UNE séance par rôle+niveau, pas deux.
 
 ## TES 34 RÈGLES DE PLACEMENT
 
@@ -134,7 +132,7 @@ Structure exacte :
               "proposition": "Vers l'écriture GS — Séance 5 : Tracer des bâtons",
               "methode": "ACCÈS Vers l'écriture GS",
               "niveau": "GS",
-              "role": "AUTO",
+              "role": "ENS",
               "rotation": "R1",
               "position_sequence": 5,
               "regles_appliquees": ["R1", "R7", "R8"],
@@ -204,7 +202,6 @@ module.exports = async function handler(req, res) {
     );
 
     // ── 3. CRÉNEAUX ATELIERS par semaine ─────────────────────────────────
-    // Récupère tous les créneaux ateliers de la période en un seul appel
     const semaineIds = semaines.map(s => s.id).join(',');
     const creneauxAteliers = await sbGet(
       `maternelle_creneaux?semaine_id=in.(${semaineIds})` +
@@ -215,7 +212,6 @@ module.exports = async function handler(req, res) {
     );
 
     // ── 4. PROGRESSION — dernière séance "fait" par source+niveau ────────
-    // Récupère tous les créneaux avec regle_id non null et statut fait/non_fait/a_refaire
     const creneauxProgression = await sbGet(
       `maternelle_creneaux?semaine_id=in.(${semaineIds})` +
       `&regle_id=not.is.null` +
@@ -224,7 +220,6 @@ module.exports = async function handler(req, res) {
       `&order=regle_id.asc`
     );
 
-    // Récupère toutes les règles de la période pour croiser
     const regles = await sbGet(
       `maternelle_regles?periode=eq.${periode.numero}` +
       `&exclu_marie=eq.false` +
@@ -232,7 +227,6 @@ module.exports = async function handler(req, res) {
       `&order=sequence_id.asc,ordre_sequence.asc`
     );
 
-    // Construit la progression : par source+niveau, dernière règle avec statut fait
     const progressionMap = {};
     for (const cr of creneauxProgression) {
       if (!cr.regle_id) continue;
@@ -245,7 +239,6 @@ module.exports = async function handler(req, res) {
       }
     }
 
-    // Calcul nb_fois_repoussee par regle_id
     const repousseeMap = {};
     for (const cr of creneauxProgression) {
       if (!cr.regle_id) continue;
@@ -276,10 +269,9 @@ module.exports = async function handler(req, res) {
       const derniere = progressionMap[key];
       const ordreMin = derniere ? derniere.ordre_sequence : 0;
 
-      // Règles suivantes dans l'ordre
       const suivantes = regles
         .filter(r => r.source === source && r.niveau === niveau && r.ordre_sequence > ordreMin)
-        .slice(0, 5); // 5 prochaines max pour ne pas surcharger le contexte
+        .slice(0, 5);
 
       for (const r of suivantes) {
         prochainesRegles.push({
@@ -347,15 +339,14 @@ module.exports = async function handler(req, res) {
     };
 
     // ── 8. APPEL API OPENAI ───────────────────────────────────────────────
-    // Rappel des règles critiques injectées directement dans le message user
     const rappelRegles = `
-RAPPEL IMPÉRATIF avant d'analyser les données :
+RAPPEL IMPÉRATIF — vérifie chaque point avant d'écrire ta réponse :
 
 1. COHÉRENCE DISPOSITIF (non-négociable) :
    - role=ENS → UNIQUEMENT type_dispositif='dirigé'
    - role=ATSEM → UNIQUEMENT type_dispositif='semi-dirigé'
    - role=AUTO → UNIQUEMENT type_dispositif='autonome'
-   Violation = erreur critique. Vérifie chaque proposition avant de l'écrire.
+   Violation = erreur critique.
 
 2. COHÉRENCE NIVEAU (non-négociable) :
    - niveau=GS → UNIQUEMENT séances de niveau GS
@@ -363,26 +354,27 @@ RAPPEL IMPÉRATIF avant d'analyser les données :
 
 3. SEMAINE S1 — RÈGLES ABSOLUES :
    - PS : UNIQUEMENT la méthode 'ACCÈS Autour des livres TPS-PS' en S1. Aucune autre méthode PS.
-   - GS : UNIQUEMENT des séances de type_dispositif='autonome' en S1. Aucune séance dirigée ou semi-dirigée GS en S1.
+   - GS : UNIQUEMENT des séances de type_dispositif='autonome' en S1. Le créneau ENS GS doit être type="vide" en S1.
 
 4. S7 : jamais de proposition sur la semaine numéro 7.
 
-5. Pour chaque créneau, vérifie dans prochaines_regles que la regle_id proposée a bien :
-   - le bon niveau (GS ou PS selon le créneau)
-   - le bon type_dispositif (dirigé/semi-dirigé/autonome selon le rôle)
+5. VÉRIFICATION PAR CRÉNEAU : pour chaque proposition, vérifie dans prochaines_regles que la regle_id a bien le bon niveau ET le bon type_dispositif. Si aucune séance du bon type n'est disponible → type="vide".
 
-6. STRUCTURE OBLIGATOIRE PAR JOUR — exactement 4 créneaux distincts :
-   - 1 créneau ENS GS (dirigé, niveau GS)
-   - 1 créneau ATSEM PS (semi-dirigé, niveau PS)
-   - 1 créneau AUTO GS (autonome, niveau GS)
-   - 1 créneau AUTO PS (autonome, niveau PS)
-   Les 4 rôles sont DIFFÉRENTS. Ne jamais répéter le même rôle+niveau deux fois dans la même journée.
-   R1 et R2 contiennent les mêmes séances — tu n'as à proposer qu'UNE séance par rôle+niveau, pas deux.
+6. STRUCTURE PAR JOUR — exactement 4 créneaux distincts :
+   - 1 × ENS GS (dirigé, GS)
+   - 1 × ATSEM PS (semi-dirigé, PS)
+   - 1 × AUTO GS (autonome, GS)
+   - 1 × AUTO PS (autonome, PS)
+   Ne jamais répéter le même rôle+niveau deux fois dans la même journée.
+
+7. JOURS OBLIGATOIRES : produis une entrée pour CHAQUE jour listé dans "jours" de chaque semaine. Si jours=["mardi","jeudi","vendredi"], ta réponse doit avoir 3 objets dans "jours". Ne jamais omettre un jour.
+
+8. TYPE VIDE : si aucune séance disponible ou mauvais type_dispositif → utilise type="vide" avec une justification claire. Ne jamais forcer une séance avec le mauvais dispositif.
 
 Voici les données à analyser :
 ${JSON.stringify(contexte)}`;
 
-    const anthropicRes = await fetch('https://api.openai.com/v1/chat/completions', {
+    const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -399,18 +391,17 @@ ${JSON.stringify(contexte)}`;
       })
     });
 
-    if (!anthropicRes.ok) {
-      const err = await anthropicRes.text();
+    if (!openaiRes.ok) {
+      const err = await openaiRes.text();
       throw new Error(`OpenAI API error : ${err}`);
     }
 
-    const anthropicData = await anthropicRes.json();
-    const texte = anthropicData.choices?.[0]?.message?.content || '{}';
+    const openaiData = await openaiRes.json();
+    const texte = openaiData.choices?.[0]?.message?.content || '{}';
 
     // ── 9. PARSE JSON MARIE ───────────────────────────────────────────────
     let plan;
     try {
-      // Sécurité : supprime d'éventuelles balises markdown si Marie en produit
       const clean = texte.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
       plan = JSON.parse(clean);
     } catch (e) {

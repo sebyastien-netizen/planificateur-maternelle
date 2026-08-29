@@ -35,7 +35,13 @@ Chaque journée de classe comporte 2 rotations d'ateliers (R1 et R2) simultanée
 - AUTO PS (autonome)
 
 R1 et R2 contiennent exactement les mêmes 4 séances. Les sous-groupes A↔B permutent entre R1 et R2. ENS et ATSEM gardent la même séance entre R1 et R2.
-Un jour = 4 créneaux à remplir (ENS GS, ATSEM PS, AUTO GS, AUTO PS).
+Un jour = exactement 4 créneaux DISTINCTS à remplir :
+- 1 × ENS GS → type_dispositif OBLIGATOIREMENT 'dirigé', niveau GS
+- 1 × ATSEM PS → type_dispositif OBLIGATOIREMENT 'semi-dirigé', niveau PS
+- 1 × AUTO GS → type_dispositif OBLIGATOIREMENT 'autonome', niveau GS
+- 1 × AUTO PS → type_dispositif OBLIGATOIREMENT 'autonome', niveau PS
+
+R1 et R2 contiennent les MÊMES 4 séances — tu proposes UNE séance par rôle+niveau, jamais deux fois le même rôle dans la même journée. Ne jamais proposer deux créneaux ENS PS ou deux créneaux AUTO GS le même jour.
 
 ## TES 34 RÈGLES DE PLACEMENT
 

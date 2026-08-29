@@ -636,6 +636,9 @@
   <div class="menu-item" id="menu-ajouter">
     <span class="menu-item-icone">＋</span> Ajouter une séance
   </div>
+    <div class="menu-item" id="menu-vider" style="color:#c0392b">
+    <i class="ti ti-eraser"></i> Vider le créneau
+  </div>
   <div class="menu-item" id="menu-saisie-libre">
     <span class="menu-item-icone">✏️</span> Saisie libre
   </div>
@@ -1215,7 +1218,29 @@ function ouvrirMenuContextuel(event, creneauId, jour, moment, niveau, heureDeb, 
     fermerMenuContextuel();
     ouvrirVoirMateriel(creneauId);
   };
-
+  document.getElementById('menu-vider').onclick = async (e) => {
+    e.stopPropagation();
+    fermerMenuContextuel();
+    if (!confirm('Vider ce créneau ? L\'activité sera effacée.')) return;
+    const token = sessionStorage.getItem('sb_access_token') || SUPABASE_ANON_KEY;
+    await fetch(`${SUPABASE_URL}/rest/v1/maternelle_creneaux?id=eq.${creneauId}`, {
+      method: 'PATCH',
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=minimal'
+      },
+      body: JSON.stringify({
+        activite: null,
+        regle_id: null,
+        notes: null,
+        statut: 'a_faire',
+        statut_planification: 'actif'
+      })
+    });
+    chargerSemaine();
+  };
   document.getElementById('menu-pdf').onclick = async (e) => {
     e.stopPropagation();
     fermerMenuContextuel();

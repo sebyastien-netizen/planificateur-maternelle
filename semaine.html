@@ -636,26 +636,33 @@
   <div class="menu-item" id="menu-ajouter">
     <span class="menu-item-icone">＋</span> Ajouter une séance
   </div>
-    <div class="menu-item" id="menu-vider" style="color:#c0392b">
-    <i class="ti ti-eraser"></i> Vider le créneau
-  </div>
   <div class="menu-item" id="menu-saisie-libre">
     <span class="menu-item-icone">✏️</span> Saisie libre
   </div>
-  <div class="menu-item" id="menu-voir-seance">
-    <span class="menu-item-icone">📋</span> Voir la séance
-  </div>
-  <div class="menu-item" id="menu-voir-materiel">
-    <span class="menu-item-icone">📎</span> Voir le matériel
-  </div>
-  <div class="menu-item" id="menu-statut-refaire">
-  <span class="menu-item-icone">🔁</span> Marquer À refaire
-</div>
-  <div class="menu-item" id="menu-pdf">
-    <span class="menu-item-icone">📄</span> Voir dans le PDF
-  </div>
-  <div class="menu-item danger" id="menu-supprimer">
-    <span class="menu-item-icone">✕</span> Supprimer
+  <div id="menu-groupe-rempli">
+    <div style="height:1px;background:#f0f0ee;margin:4px 0"></div>
+    <div class="menu-item" id="menu-voir-seance">
+      <span class="menu-item-icone">📋</span> Voir la séance
+    </div>
+    <div class="menu-item" id="menu-voir-materiel">
+      <span class="menu-item-icone">📎</span> Voir le matériel
+    </div>
+    <div class="menu-item" id="menu-statut-refaire">
+      <span class="menu-item-icone">🔁</span> Marquer À refaire
+    </div>
+    <div class="menu-item" id="menu-pdf">
+      <span class="menu-item-icone">📄</span> Voir dans le PDF
+    </div>
+    <div style="height:1px;background:#f0f0ee;margin:4px 0"></div>
+    <div class="menu-item" id="menu-retirer-attente" style="color:#E8730A">
+      <span class="menu-item-icone">📤</span> Retirer — mettre en attente
+    </div>
+    <div class="menu-item" id="menu-retirer-sommeil" style="color:#888">
+      <span class="menu-item-icone">💤</span> Retirer — mettre en sommeil
+    </div>
+    <div class="menu-item" id="menu-retirer-visuel" style="color:#c0392b">
+      <span class="menu-item-icone">👻</span> Retirer visuellement
+    </div>
   </div>
 </div>
 
@@ -1085,7 +1092,10 @@ function construireVue(momentMap, ordre, jours, tousCreneaux, periode) {
         const estAtelier = moment.toLowerCase().includes('atelier');
         const classeExtra = estAtelier ? ' cellule-ateliers' : '';
         if (cs.length > 0) {
-          html += `<div class="cellule${classeExtra}">${renderGroupe(cs, estRituel, jour, moment, heureDebut, heureFin)}</div>`;
+          const contenu = renderGroupe(cs, estRituel, jour, moment, heureDebut, heureFin);
+          const momentSafe = moment.replace(/'/g, "\\'");
+          const btnAjouter = estAtelier ? `<div style="font-size:0.7rem;color:#2d6a4f;cursor:pointer;padding:4px 8px;text-align:center;border-top:1px dashed #a8d5b5;margin-top:4px" onclick="ouvrirMenuContextuel(event, null, '${jour}', '${momentSafe}', null, '${heureDebut}', '${heureFin}', false)"><i class="ti ti-plus" style="font-size:11px" aria-hidden="true"></i> Ajouter</div>` : '';
+          html += `<div class="cellule${classeExtra}">${contenu}${btnAjouter}</div>`;
         } else if (estRituel) {
           // Cellule rituel vide — cliquable pour ajouter
           html += `<div class="cellule${classeExtra}">
@@ -1133,7 +1143,7 @@ function renderGroupe(creneaux, cliquable, jour, moment, heureDebut, heureFin) {
     // Toutes les séances avec un id sont cliquables
     if (c.id) {
       html += `<div class="entree entree-cliquable"
-        onclick="ouvrirMenuContextuel(event, '${c.id}', '${jour || ''}', '${moment || ''}', '${niv}', '${hd}', '${hf}')">
+        onclick="ouvrirMenuContextuel(event, '${c.id}', '${jour || ''}', '${moment || ''}', '${niv}', '${hd}', '${hf}', ${c.activite ? 'true' : 'false'})">
         <div class="entree-top">`;
     } else {
       html += '<div class="entree"><div class="entree-top">';
@@ -1172,7 +1182,7 @@ html += `<span class="activite"${estVide ? ' style="color:#bbb;font-style:italic
 // =============================================
 // MENU CONTEXTUEL ÉTENDU
 // =============================================
-function ouvrirMenuContextuel(event, creneauId, jour, moment, niveau, heureDeb, heureFin) {
+function ouvrirMenuContextuel(event, creneauId, jour, moment, niveau, heureDeb, heureFin, activite) {
   event.stopPropagation();
 
   etatApp.menuCreneauId = creneauId;
@@ -1190,6 +1200,9 @@ function ouvrirMenuContextuel(event, creneauId, jour, moment, niveau, heureDeb, 
   const y = Math.min(event.clientY, window.innerHeight - 220);
   menu.style.left = x + 'px';
   menu.style.top = y + 'px';
+
+  // Afficher/masquer groupe rempli selon état du créneau
+  document.getElementById('menu-groupe-rempli').style.display = activite ? 'block' : 'none';
 
   document.getElementById('menu-ajouter').onclick = (e) => {
     e.stopPropagation();
@@ -1218,57 +1231,48 @@ function ouvrirMenuContextuel(event, creneauId, jour, moment, niveau, heureDeb, 
     fermerMenuContextuel();
     ouvrirVoirMateriel(creneauId);
   };
-  document.getElementById('menu-vider').onclick = async (e) => {
-    e.stopPropagation();
-    fermerMenuContextuel();
-    if (!confirm('Vider ce créneau ? L\'activité sera effacée.')) return;
-    const token = sessionStorage.getItem('sb_access_token') || SUPABASE_ANON_KEY;
 
-    // Récupérer le type du créneau
-    const infoRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/maternelle_creneaux?id=eq.${creneauId}&select=type`,
-      { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${token}` } }
-    );
-    const infos = await infoRes.json();
-    const typeCreneauActuel = infos[0]?.type;
-
-    if (typeCreneauActuel === 'libre') {
-      // Créneau manuel → supprimer la ligne
-      await fetch(`${SUPABASE_URL}/rest/v1/maternelle_creneaux?id=eq.${creneauId}`, {
-        method: 'DELETE',
-        headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${token}`, Prefer: 'return=minimal' }
-      });
-    } else {
-      // Créneau structurel → remettre à vide
-      await fetch(`${SUPABASE_URL}/rest/v1/maternelle_creneaux?id=eq.${creneauId}`, {
-        method: 'PATCH',
-        headers: {
-          apikey: SUPABASE_ANON_KEY,
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          Prefer: 'return=minimal'
-        },
-        body: JSON.stringify({
-          activite: null,
-          regle_id: null,
-          notes: null,
-          statut: 'a_faire',
-          statut_planification: 'actif'
-        })
-      });
-    }
-    chargerSemaine();
-  };
   document.getElementById('menu-pdf').onclick = async (e) => {
     e.stopPropagation();
     fermerMenuContextuel();
     await ouvrirTiroirPdfDepuisCreneau(creneauId);
   };
 
-  document.getElementById('menu-supprimer').onclick = (e) => {
+  document.getElementById('menu-retirer-attente').onclick = (e) => {
     e.stopPropagation();
     fermerMenuContextuel();
-    confirmerSuppression(creneauId);
+    confirmerSuppression(creneauId, 'en_attente');
+  };
+
+  document.getElementById('menu-retirer-sommeil').onclick = (e) => {
+    e.stopPropagation();
+    fermerMenuContextuel();
+    confirmerSuppression(creneauId, 'en_sommeil');
+  };
+
+  document.getElementById('menu-retirer-visuel').onclick = async (e) => {
+    e.stopPropagation();
+    fermerMenuContextuel();
+    const token = sessionStorage.getItem('sb_access_token') || SUPABASE_ANON_KEY;
+    const infoRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/maternelle_creneaux?id=eq.${creneauId}&select=type`,
+      { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${token}` } }
+    );
+    const infos = await infoRes.json();
+    const typeC = infos[0]?.type;
+    if (typeC === 'libre') {
+      await fetch(`${SUPABASE_URL}/rest/v1/maternelle_creneaux?id=eq.${creneauId}`, {
+        method: 'DELETE',
+        headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${token}`, Prefer: 'return=minimal' }
+      });
+    } else {
+      await fetch(`${SUPABASE_URL}/rest/v1/maternelle_creneaux?id=eq.${creneauId}`, {
+        method: 'PATCH',
+        headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+        body: JSON.stringify({ activite: null, regle_id: null, notes: null, statut: 'a_faire', statut_planification: 'actif' })
+      });
+    }
+    chargerSemaine();
   };
     document.getElementById('menu-statut-refaire').onclick = (e) => {
     e.stopPropagation();

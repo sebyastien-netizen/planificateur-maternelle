@@ -487,6 +487,65 @@
       max-width: 280px; box-shadow: 0 4px 16px rgba(0,0,0,0.2);
     }
     .org-tooltip.actif { display: block; }
+    /* ── Superposition Choisir une séance ── */
+.choisir-fond {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.5); z-index: 400;
+  align-items: center; justify-content: center; padding: 20px;
+}
+.choisir-fond.actif { display: flex; }
+.choisir-boite {
+  background: #fafaf8; border-radius: 14px;
+  border: 1px solid #e5e5e0; width: 100%; max-width: 1100px;
+  height: calc(100vh - 40px); display: flex; flex-direction: column;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.2); overflow: hidden;
+}
+.choisir-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 20px; border-bottom: 1px solid #e5e5e0;
+  background: white; flex-shrink: 0;
+}
+.choisir-titre { font-size: 0.9rem; font-weight: 600; color: #1a1a1a; }
+.choisir-creneau { font-size: 0.75rem; color: #888; margin-top: 3px; display: flex; gap: 6px; align-items: center; }
+.choisir-btn-annuler {
+  padding: 6px 14px; background: white; border: 1px solid #ddd;
+  border-radius: 8px; font-size: 0.78rem; color: #666; cursor: pointer;
+}
+.choisir-legende {
+  display: flex; gap: 16px; padding: 8px 20px;
+  border-bottom: 1px solid #e5e5e0; background: #fafaf8;
+  flex-shrink: 0; font-size: 0.7rem; color: #888;
+  align-items: center; flex-wrap: wrap;
+}
+.choisir-legende-item { display: flex; align-items: center; gap: 5px; }
+.choisir-leg-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+.choisir-colonnes { display: flex; flex: 1; overflow-x: auto; overflow-y: hidden; }
+.choisir-col { min-width: 155px; max-width: 195px; flex: 1; display: flex; flex-direction: column; border-right: 1px solid #e5e5e0; }
+.choisir-col:last-child { border-right: none; }
+.choisir-col-header { padding: 8px 10px; background: #fafaf8; border-bottom: 1px solid #e5e5e0; flex-shrink: 0; }
+.choisir-col-titre { font-size: 0.72rem; font-weight: 600; color: #1a1a1a; line-height: 1.3; }
+.choisir-col-sous { font-size: 0.62rem; color: #aaa; margin-top: 2px; }
+.choisir-col-avance { font-size: 0.6rem; color: #888; margin-top: 4px; display: flex; align-items: center; gap: 4px; }
+.choisir-progress { flex: 1; height: 3px; background: #e5e5e0; border-radius: 2px; overflow: hidden; }
+.choisir-progress-fill { height: 100%; background: #2d6a4f; border-radius: 2px; }
+.choisir-col-body { flex: 1; overflow-y: auto; padding: 6px; display: flex; flex-direction: column; gap: 3px; }
+.choisir-seq-label { font-size: 0.58rem; font-weight: 600; color: #bbb; text-transform: uppercase; letter-spacing: 0.04em; padding: 4px 2px 2px; }
+.choisir-seance { padding: 6px 8px; border-radius: 6px; border: 1px solid transparent; }
+.choisir-seance-titre { font-size: 0.68rem; font-weight: 500; line-height: 1.3; }
+.choisir-seance-pos { font-size: 0.58rem; color: #aaa; margin-top: 1px; }
+.choisir-raison { font-size: 0.58rem; color: #bbb; margin-top: 2px; font-style: italic; }
+.cs-fait { background: #e8f4ee; border-color: #a8d5b5 !important; cursor: default; }
+.cs-fait .choisir-seance-titre { color: #2d6a4f; }
+.cs-afaire { background: white; border-color: #e5e5e0; cursor: pointer; }
+.cs-afaire:hover { background: #e8f4ee; border-color: #2d6a4f; }
+.cs-afaire .choisir-seance-titre { color: #1a1a1a; }
+.cs-attente { background: #FDF0E3; border-color: #f0c080; cursor: pointer; }
+.cs-attente:hover { background: #fce8cc; border-color: #E8730A; }
+.cs-attente .choisir-seance-titre { color: #856404; }
+.cs-nonfait { background: #fdeef2; border-color: #f0b0c0; cursor: default; }
+.cs-nonfait .choisir-seance-titre { color: #c0392b; }
+.cs-incompatible { background: #f5f5f3; border-color: #e5e5e0; opacity: 0.45; cursor: not-allowed; }
+.cs-incompatible .choisir-seance-titre { color: #aaa; }
 
     /* Actions carte */
     .org-carte-actions {
@@ -1100,7 +1159,11 @@ function ouvrirMenuContextuel(event, creneauId, jour, moment, niveau, heureDeb, 
   document.getElementById('menu-ajouter').onclick = (e) => {
     e.stopPropagation();
     fermerMenuContextuel();
-    ouvrirTiroirSelection('ajouter', jour, moment, null, heureDeb, heureFin);
+    if (moment === 'Ateliers rotation 1' || moment === 'Ateliers rotation 2') {
+      ouvrirChoisirSeance(creneauId, etatApp.menuRole || niveau, niveau, jour);
+    } else {
+      ouvrirTiroirSelection('ajouter', jour, moment, null, heureDeb, heureFin);
+    }
   };
 
   document.getElementById('menu-saisie-libre').onclick = (e) => {
@@ -1403,14 +1466,18 @@ function fermerTiroirPdf() {
   document.getElementById('pdf-iframe').src = '';
 }
 
-function ouvrirMenuAjouter(event, creneauId, jour, moment, niveau, heureDeb, heureFin) {
+function ouvrirMenuAjouter(event, creneauId, jour, moment, niveau, role, heureDeb, heureFin) {
   event.stopPropagation();
   etatApp.menuJour = jour;
   etatApp.menuMoment = moment;
   etatApp.menuNiveau = niveau;
   etatApp.menuHeureDeb = heureDeb;
   etatApp.menuHeureFin = heureFin;
-  ouvrirTiroirSelection('ajouter', jour, moment, null, heureDeb, heureFin);
+  if (moment === 'Ateliers rotation 1' || moment === 'Ateliers rotation 2') {
+    ouvrirChoisirSeance(creneauId, role, niveau, jour);
+  } else {
+    ouvrirTiroirSelection('ajouter', jour, moment, null, heureDeb, heureFin);
+  }
 }
 
 function fermerMenuContextuel() {
@@ -2360,6 +2427,170 @@ function afficherTooltip(event, texte) {
 // =============================================
 chargerSemaine();
 </script>
+  <!-- SUPERPOSITION — Choisir une séance atelier -->
+<div class="choisir-fond" id="choisir-fond">
+  <div class="choisir-boite">
+    <div class="choisir-header">
+      <div>
+        <div class="choisir-titre">Choisir une séance</div>
+        <div class="choisir-creneau" id="choisir-creneau-label">—</div>
+      </div>
+      <button class="choisir-btn-annuler" onclick="fermerChoisirSeance()">Annuler</button>
+    </div>
+    <div class="choisir-legende">
+      <div class="choisir-legende-item"><div class="choisir-leg-dot" style="background:#2d6a4f"></div> Fait</div>
+      <div class="choisir-legende-item"><div class="choisir-leg-dot" style="background:#e5e5e0"></div> À faire</div>
+      <div class="choisir-legende-item"><div class="choisir-leg-dot" style="background:#E8730A"></div> En attente</div>
+      <div class="choisir-legende-item"><div class="choisir-leg-dot" style="background:#c0392b"></div> Non fait</div>
+      <div class="choisir-legende-item"><div class="choisir-leg-dot" style="background:#f5f5f3; border:1px solid #ddd"></div> Incompatible</div>
+    </div>
+    <div class="choisir-colonnes" id="choisir-colonnes"></div>
+  </div>
+</div>
+  // =============================================
+// CHOISIR UNE SÉANCE ATELIER
+// =============================================
+
+let choisirEtat = { creneauId: null, role: null, niveau: null, jour: null };
+
+async function ouvrirChoisirSeance(creneauId, role, niveau, jour) {
+  choisirEtat = { creneauId, role, niveau, jour };
+
+  // Label créneau
+  const roleLabel = { ENS: 'ENS', ATSEM: 'ATSEM', AUTO: 'AUTO' }[role] || role;
+  const niveauLabel = niveau || '';
+  document.getElementById('choisir-creneau-label').innerHTML =
+    `Créneau sélectionné : <span style="background:${niveau==='GS'?'#dbeafe':'#fff3cd'};color:${niveau==='GS'?'#1e40af':'#856404'};padding:1px 6px;border-radius:3px;font-weight:600;font-size:0.65rem">${roleLabel}</span>
+     <span style="background:${niveau==='GS'?'#dbeafe':'#fff3cd'};color:${niveau==='GS'?'#1e40af':'#856404'};padding:1px 6px;border-radius:3px;font-weight:600;font-size:0.65rem">${niveauLabel}</span>
+     — ${jour || ''}`;
+
+  document.getElementById('choisir-fond').classList.add('actif');
+  document.getElementById('choisir-colonnes').innerHTML = '<div style="padding:2rem;color:#888;font-size:0.82rem">Chargement…</div>';
+
+  try {
+    const token = sessionStorage.getItem('sb_access_token') || SUPABASE_ANON_KEY;
+
+    // Charger toutes les règles + progression
+    const [reglesRes, creneauxRes] = await Promise.all([
+      fetch(`${SUPABASE_URL}/rest/v1/maternelle_regles?exclu_marie=eq.false&select=id,source,niveau,sequence_id,ordre_sequence,description,type_dispositif&order=source.asc,ordre_sequence.asc`, { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${token}` } }),
+      fetch(`${SUPABASE_URL}/rest/v1/maternelle_creneaux?regle_id=not.is.null&select=regle_id,statut,statut_planification`, { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${token}` } })
+    ]);
+
+    const regles = await reglesRes.json();
+    const creneaux = await creneauxRes.json();
+
+    // Map statuts par regle_id
+    const statutMap = {};
+    for (const c of creneaux) {
+      if (!c.regle_id) continue;
+      if (!statutMap[c.regle_id] || c.statut === 'fait') {
+        statutMap[c.regle_id] = { statut: c.statut, statut_planification: c.statut_planification };
+      }
+    }
+
+    // Grouper par source
+    const sources = [...new Set(regles.map(r => r.source))];
+    const sourcesMeta = {
+      'ACCÈS Vers l\'écriture GS': { label: 'Vers l\'écriture GS', sous: 'ACCÈS · GS' },
+      'ACCÈS Vers l\'écriture PS': { label: 'Vers l\'écriture PS', sous: 'ACCÈS · PS' },
+      'ACCÈS Autour des livres TPS-PS': { label: 'Autour des livres', sous: 'ACCÈS · PS' },
+      'ACCÈS Vers la phono GS': { label: 'Vers la phono GS', sous: 'ACCÈS · GS' },
+      'MHM MS/GS': { label: 'MHM GS', sous: 'Maths · GS' },
+      'MHM PS/MS': { label: 'MHM PS', sous: 'Maths · PS' }
+    };
+
+    let html = '';
+    for (const source of sources) {
+      const meta = sourcesMeta[source] || { label: source, sous: '' };
+      const reglesSrc = regles.filter(r => r.source === source);
+      const faites = reglesSrc.filter(r => statutMap[r.id]?.statut === 'fait').length;
+      const pct = reglesSrc.length ? Math.round(faites / reglesSrc.length * 100) : 0;
+
+      // Grouper par sequence_id
+      const sequences = [...new Set(reglesSrc.map(r => r.sequence_id))];
+
+      let bodyHtml = '';
+      for (const seqId of sequences) {
+        const seqRegles = reglesSrc.filter(r => r.sequence_id === seqId);
+        const seqLabel = seqId ? seqId.replace(/-/g, ' ').replace(/p\d+/i, '').replace(/seq \d+/i, '').trim() : 'Séquences';
+        bodyHtml += `<div class="choisir-seq-label">${seqLabel}</div>`;
+
+        for (const r of seqRegles) {
+          const s = statutMap[r.id];
+          const statut = s?.statut || 'a_faire';
+          const statutPlan = s?.statut_planification || 'actif';
+
+          // Compatibilité
+          const incompatNiveau = r.niveau !== niveau;
+          const incompatDisp = (role === 'ENS' && r.type_dispositif !== 'dirigé') ||
+                               (role === 'ATSEM' && r.type_dispositif !== 'semi-dirigé') ||
+                               (role === 'AUTO' && r.type_dispositif !== 'autonome');
+          const incompatible = incompatNiveau || incompatDisp;
+          const raisonIncompat = incompatNiveau ? `Niveau ${r.niveau} — créneau ${niveau}` : `${r.type_dispositif} — créneau ${role.toLowerCase()}`;
+
+          let cls = 'cs-afaire';
+          if (incompatible) cls = 'cs-incompatible';
+          else if (statut === 'fait') cls = 'cs-fait';
+          else if (statut === 'non_fait') cls = 'cs-nonfait';
+          else if (statutPlan === 'en_attente') cls = 'cs-attente';
+
+          const clickable = !incompatible && statut !== 'fait' && statut !== 'non_fait';
+          const onclick = clickable ? `onclick="choisirSeance('${r.id}', \`${r.description.replace(/`/g, "'").substring(0, 80)}\`)"` : '';
+
+          bodyHtml += `<div class="choisir-seance ${cls}" ${onclick}>
+            <div class="choisir-seance-titre">${r.description.substring(0, 60)}${r.description.length > 60 ? '…' : ''}</div>
+            <div class="choisir-seance-pos">pos. ${r.ordre_sequence} · ${r.type_dispositif || '—'}</div>
+            ${incompatible ? `<div class="choisir-raison">${raisonIncompat}</div>` : ''}
+            ${statut === 'fait' ? '<div class="choisir-seance-pos" style="color:#2d6a4f">✓ Fait</div>' : ''}
+          </div>`;
+        }
+      }
+
+      html += `<div class="choisir-col">
+        <div class="choisir-col-header">
+          <div class="choisir-col-titre">${meta.label}</div>
+          <div class="choisir-col-sous">${meta.sous}</div>
+          <div class="choisir-col-avance">
+            <div class="choisir-progress"><div class="choisir-progress-fill" style="width:${pct}%"></div></div>
+            <span>${faites}/${reglesSrc.length}</span>
+          </div>
+        </div>
+        <div class="choisir-col-body">${bodyHtml}</div>
+      </div>`;
+    }
+
+    document.getElementById('choisir-colonnes').innerHTML = html;
+
+  } catch (err) {
+    document.getElementById('choisir-colonnes').innerHTML =
+      `<div style="padding:2rem;color:#c0392b;font-size:0.82rem">⚠ Erreur : ${err.message}</div>`;
+  }
+}
+
+async function choisirSeance(regleId, activite) {
+  const { creneauId } = choisirEtat;
+  if (!creneauId || !regleId) return;
+
+  const token = sessionStorage.getItem('sb_access_token') || SUPABASE_ANON_KEY;
+  await fetch(`${SUPABASE_URL}/rest/v1/maternelle_creneaux?id=eq.${creneauId}`, {
+    method: 'PATCH',
+    headers: {
+      apikey: SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      Prefer: 'return=minimal'
+    },
+    body: JSON.stringify({ regle_id: regleId, activite })
+  });
+
+  fermerChoisirSeance();
+  chargerSemaine();
+}
+
+function fermerChoisirSeance() {
+  document.getElementById('choisir-fond').classList.remove('actif');
+  choisirEtat = { creneauId: null, role: null, niveau: null, jour: null };
+}
 <!-- =============================================
      SUPERPOSITION — Organiser mes créneaux
 ============================================= -->

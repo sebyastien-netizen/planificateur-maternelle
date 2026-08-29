@@ -217,6 +217,7 @@ module.exports = async function handler(req, res) {
     // Récupère toutes les règles de la période pour croiser
     const regles = await sbGet(
       `maternelle_regles?periode=eq.${periode.numero}` +
+      `&exclu_marie=eq.false` +
       `&select=id,source,niveau,sequence_id,ordre_sequence,description,type_dispositif,est_introduction` +
       `&order=sequence_id.asc,ordre_sequence.asc`
     );

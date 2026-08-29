@@ -1223,24 +1223,40 @@ function ouvrirMenuContextuel(event, creneauId, jour, moment, niveau, heureDeb, 
     fermerMenuContextuel();
     if (!confirm('Vider ce créneau ? L\'activité sera effacée.')) return;
     const token = sessionStorage.getItem('sb_access_token') || SUPABASE_ANON_KEY;
-    await fetch(`${SUPABASE_URL}/rest/v1/maternelle_creneaux?id=eq.${creneauId}`, {
-      method: 'PATCH',
-      headers: {
-        apikey: SUPABASE_ANON_KEY,
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-        Prefer: 'return=minimal'
-      },
-      body: JSON.stringify({
-        activite: null,
-        regle_id: null,
-        notes: null,
-        statut: 'a_faire',
-        statut_planification: 'actif',
-        niveau: null,
-        role: null
-      })
-    });
+
+    // Récupérer le type du créneau
+    const infoRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/maternelle_creneaux?id=eq.${creneauId}&select=type`,
+      { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${token}` } }
+    );
+    const infos = await infoRes.json();
+    const typeCreneauActuel = infos[0]?.type;
+
+    if (typeCreneauActuel === 'libre') {
+      // Créneau manuel → supprimer la ligne
+      await fetch(`${SUPABASE_URL}/rest/v1/maternelle_creneaux?id=eq.${creneauId}`, {
+        method: 'DELETE',
+        headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${token}`, Prefer: 'return=minimal' }
+      });
+    } else {
+      // Créneau structurel → remettre à vide
+      await fetch(`${SUPABASE_URL}/rest/v1/maternelle_creneaux?id=eq.${creneauId}`, {
+        method: 'PATCH',
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          Prefer: 'return=minimal'
+        },
+        body: JSON.stringify({
+          activite: null,
+          regle_id: null,
+          notes: null,
+          statut: 'a_faire',
+          statut_planification: 'actif'
+        })
+      });
+    }
     chargerSemaine();
   };
   document.getElementById('menu-pdf').onclick = async (e) => {

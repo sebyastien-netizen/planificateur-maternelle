@@ -1099,10 +1099,7 @@ function construireVue(momentMap, ordre, jours, tousCreneaux, periode) {
         if (cs.length > 0) {
           const contenu = renderGroupe(cs, estRituel, jour, moment, heureDebut, heureFin);
           const momentEncode = moment.replace(/'/g, "\\'");
-          const btnAjouter = estAtelier ? `<div style="font-size:0.7rem;color:#2d6a4f;cursor:pointer;padding:4px 8px;text-align:center;border-top:1px dashed #a8d5b5;margin-top:4px"
-            onclick="ouvrirMenuContextuel(event, null, '${jour}', '${momentEncode}', null, '${heureDebut}', '${heureFin}', false)">
-            <i class="ti ti-plus" style="font-size:11px" aria-hidden="true"></i> Ajouter
-          </div>` : '';
+          const btnAjouter = '';
           html += `<div class="cellule${classeExtra}">${contenu}${btnAjouter}</div>`;
         } else if (estRituel) {
           // Cellule rituel vide — cliquable pour ajouter

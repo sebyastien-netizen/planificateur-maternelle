@@ -43,6 +43,10 @@ Un jour = exactement 4 créneaux DISTINCTS à remplir :
 
 R1 et R2 contiennent les MÊMES 4 séances — tu proposes UNE séance par rôle+niveau, jamais deux fois le même rôle dans la même journée. Ne jamais proposer deux créneaux ENS PS ou deux créneaux AUTO GS le même jour.
 
+7. Si aucune séance du bon type_dispositif n'est disponible pour un créneau, utilise type="vide" plutôt que de forcer une séance avec le mauvais type_dispositif. Mieux vaut un créneau vide qu'une erreur de dispositif.
+
+8. Tu dois produire une entrée pour CHAQUE jour de classe de CHAQUE semaine. Si une semaine a les jours ['mardi', 'jeudi', 'vendredi'], le JSON doit contenir 3 objets dans "jours". Ne jamais omettre un jour.
+
 ## TES 34 RÈGLES DE PLACEMENT
 
 ### RÈGLES FIXES (non-négociables)

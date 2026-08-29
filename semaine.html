@@ -336,6 +336,200 @@
 
     .nav-select:hover { border-color: #2d6a4f; }
 
+    /* ── Bouton Organiser ── */
+    .btn-organiser {
+      font-size: 0.85rem; color: #2d6a4f; background: #e8f4ee;
+      border: 1px solid #a8d5b5; padding: 6px 14px; border-radius: 8px;
+      cursor: pointer; display: flex; align-items: center; gap: 6px;
+    }
+    .btn-organiser:hover { background: #d4edde; }
+
+    /* ── Superposition Organiser mes créneaux ── */
+    .organiser-fond {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.5); z-index: 400;
+      align-items: flex-start; justify-content: center;
+      padding: 20px;
+    }
+    .organiser-fond.actif { display: flex; }
+
+    .organiser-boite {
+      background: #fafaf8; border-radius: 14px;
+      border: 1px solid #e5e5e0;
+      width: 100%; max-width: 1100px;
+      height: calc(100vh - 40px);
+      display: flex; flex-direction: column;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.2);
+      overflow: hidden;
+    }
+
+    /* Header organiser */
+    .org-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 20px; border-bottom: 1px solid #e5e5e0;
+      background: white; flex-shrink: 0;
+    }
+    .org-header-titre { font-size: 0.95rem; font-weight: 600; color: #2d6a4f; display: flex; align-items: center; gap: 8px; }
+    .org-header-sous { font-size: 0.75rem; color: #888; margin-top: 2px; }
+    .org-btn-fermer-enreg {
+      font-size: 0.82rem; background: #2d6a4f; color: white;
+      border: none; border-radius: 8px; padding: 7px 16px; cursor: pointer;
+    }
+    .org-btn-fermer-enreg:hover { background: #235a40; }
+
+    /* Nav semaines */
+    .org-nav-semaines {
+      display: flex; align-items: center; gap: 6px;
+      padding: 8px 20px; border-bottom: 1px solid #e5e5e0;
+      background: #fafaf8; flex-shrink: 0; overflow-x: auto;
+    }
+    .org-sem-pill {
+      padding: 5px 14px; border-radius: 20px; font-size: 0.78rem;
+      font-weight: 500; cursor: pointer; white-space: nowrap;
+      border: 1px solid #ddd; background: white; color: #666;
+      transition: all 0.15s;
+    }
+    .org-sem-pill:hover { border-color: #2d6a4f; color: #2d6a4f; }
+    .org-sem-pill.active { background: #e8f4ee; color: #2d6a4f; border-color: #2d6a4f; font-weight: 600; }
+    .org-sem-pill.validee { background: #d1fae5; color: #2d6a4f; border-color: #a8d5b5; }
+    .org-sem-pill.conflit { background: #fff3cd; color: #856404; border-color: #fcd34d; }
+
+    /* Corps */
+    .org-body { display: flex; flex: 1; overflow: hidden; }
+
+    /* Colonne jours */
+    .org-col-jours {
+      width: 110px; border-right: 1px solid #e5e5e0;
+      background: #fafaf8; flex-shrink: 0; overflow-y: auto;
+    }
+    .org-jour-item {
+      padding: 12px 14px; border-bottom: 1px solid #e5e5e0;
+      cursor: pointer; transition: background 0.1s;
+    }
+    .org-jour-item:hover { background: #f0f0ee; }
+    .org-jour-item.actif { background: #e8f4ee; border-left: 3px solid #2d6a4f; }
+    .org-jour-nom { font-size: 0.82rem; font-weight: 500; color: #1a1a1a; }
+    .org-jour-date { font-size: 0.68rem; color: #aaa; margin-top: 2px; }
+    .org-jour-statut { font-size: 0.68rem; margin-top: 5px; }
+    .org-jour-statut.valide { color: #2d6a4f; }
+    .org-jour-statut.en-cours { color: #2d6a4f; }
+    .org-jour-statut.vide { color: #bbb; }
+
+    /* Détail */
+    .org-detail { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+    /* Bulle Marie */
+    .org-marie-bulle {
+      margin: 14px 20px 0;
+      background: white; border: 1px solid #a8d5b5;
+      border-left: 3px solid #2d6a4f;
+      border-radius: 8px; padding: 12px 14px; flex-shrink: 0;
+    }
+    .org-marie-nom { font-size: 0.7rem; font-weight: 700; color: #2d6a4f; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .org-marie-texte { font-size: 0.8rem; color: #333; line-height: 1.55; }
+    .org-marie-conseil { font-size: 0.75rem; color: #666; margin-top: 7px; font-style: italic; border-top: 1px solid #e5e5e0; padding-top: 7px; }
+
+    /* Liste créneaux */
+    .org-creneaux-liste { flex: 1; overflow-y: auto; padding: 12px 20px; display: flex; flex-direction: column; gap: 10px; }
+
+    /* Carte créneau */
+    .org-carte {
+      border: 1.5px solid #e5e5e0; border-radius: 10px;
+      overflow: hidden; background: white;
+    }
+    .org-carte.impacte { border-color: #E8730A; }
+    .org-carte.conflit { border-color: #f59e0b; }
+    .org-carte.vide { border-color: #ddd; opacity: 0.7; }
+
+    .org-carte-top {
+      padding: 10px 14px; display: flex;
+      justify-content: space-between; align-items: flex-start; gap: 8px;
+    }
+    .org-carte-top.impacte { background: #FDF0E3; }
+    .org-carte-top.conflit { background: #fff8e1; }
+    .org-carte-top.vide { background: #fafaf8; }
+    .org-carte-top.normal { background: white; }
+
+    .org-carte-meta { display: flex; gap: 4px; margin-bottom: 5px; flex-wrap: wrap; }
+    .org-carte-seance { font-size: 0.82rem; font-weight: 500; color: #1a1a1a; margin-bottom: 2px; }
+    .org-carte-methode { font-size: 0.7rem; color: #888; }
+    .org-regle-pill {
+      display: inline-flex; align-items: center; gap: 3px;
+      font-size: 0.65rem; color: #2d6a4f; background: #e8f4ee;
+      padding: 2px 8px; border-radius: 20px; margin-top: 5px;
+      border: 1px solid #a8d5b5;
+    }
+    .org-conflit-msg { font-size: 0.72rem; color: #856404; margin-top: 5px; display: flex; align-items: flex-start; gap: 4px; }
+    .org-vide-msg { font-size: 0.72rem; color: #aaa; margin-top: 5px; font-style: italic; }
+
+    /* Bouton (i) */
+    .org-btn-i {
+      width: 22px; height: 22px; border-radius: 50%;
+      background: white; border: 1px solid #ddd;
+      color: #888; font-size: 0.7rem; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; font-style: italic; font-family: serif; font-weight: 700;
+    }
+    .org-btn-i:hover { border-color: #2d6a4f; color: #2d6a4f; }
+
+    /* Tooltip (i) */
+    .org-tooltip {
+      display: none; position: fixed; z-index: 500;
+      background: #1a1a1a; color: white; border-radius: 8px;
+      padding: 10px 14px; font-size: 0.75rem; line-height: 1.5;
+      max-width: 280px; box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+    }
+    .org-tooltip.actif { display: block; }
+
+    /* Actions carte */
+    .org-carte-actions {
+      display: flex; gap: 8px; padding: 8px 14px;
+      border-top: 1px solid #f0f0ee; background: #fafaf8;
+    }
+    .org-btn-accepter {
+      flex: 1; padding: 7px; background: #d1fae5; color: #2d6a4f;
+      border: 1px solid #a8d5b5; border-radius: 7px;
+      font-size: 0.78rem; font-weight: 500; cursor: pointer;
+    }
+    .org-btn-accepter:hover { background: #a8d5b5; }
+    .org-btn-accepter.accepte { background: #2d6a4f; color: white; }
+    .org-btn-modifier {
+      flex: 1; padding: 7px; background: white; color: #666;
+      border: 1px solid #ddd; border-radius: 7px;
+      font-size: 0.78rem; cursor: pointer;
+    }
+    .org-btn-modifier:hover { background: #f5f5f0; }
+    .org-btn-ignorer {
+      padding: 7px 12px; background: white; color: #aaa;
+      border: 1px solid #eee; border-radius: 7px;
+      font-size: 0.78rem; cursor: pointer;
+    }
+
+    /* Footer journée */
+    .org-footer {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 10px 20px; border-top: 1px solid #e5e5e0;
+      background: white; flex-shrink: 0;
+    }
+    .org-footer-info { font-size: 0.75rem; color: #888; }
+    .org-btn-valider-jour {
+      padding: 8px 20px; background: #2d6a4f; color: white;
+      border: none; border-radius: 8px; font-size: 0.82rem;
+      font-weight: 600; cursor: pointer;
+    }
+    .org-btn-valider-jour:hover { background: #235a40; }
+    .org-btn-valider-jour:disabled { background: #a8d5b5; cursor: default; }
+
+    /* Badges */
+    .org-badge { font-size: 0.65rem; font-weight: 600; padding: 1px 6px; border-radius: 4px; white-space: nowrap; }
+    .org-badge-ens { background: #dbeafe; color: #1e40af; }
+    .org-badge-atsem { background: #fff3cd; color: #856404; }
+    .org-badge-auto { background: #f0f0ee; color: #666; border: 1px solid #ddd; }
+    .org-badge-gs { background: #dbeafe; color: #1e40af; }
+    .org-badge-ps { background: #fff3cd; color: #856404; }
+    .org-badge-marie { background: #e8f4ee; color: #2d6a4f; }
+    .org-badge-conflit { background: #fff3cd; color: #856404; }
+
     @media print {
       body { background: white; padding: 0; }
       .btn-retour, .btn-rituels, .toggle-group { display: none; }
@@ -361,6 +555,7 @@
   </div>
   <div class="header-actions">
     <button class="btn-rituels" onclick="ouvrirTiroir()">📋 Rituels de la semaine</button>
+    <button class="btn-organiser" onclick="ouvrirOrganiser()">✨ Organiser mes créneaux</button>
     <a href="accueil.html" class="btn-retour">← Retour</a>
   </div>
 </div>
@@ -1670,10 +1865,453 @@ function naviguerSemaine(semaineId) {
 }
 
 // =============================================
+// ORGANISER MES CRÉNEAUX
+// =============================================
+
+// État de l'interface organiser
+let orgEtat = {
+  plan: null,           // plan complet retourné par Marie (ou simulé)
+  semaineActive: 0,     // index dans plan.semaines
+  jourActif: 0,         // index dans la semaine active
+  validations: {},      // { "semaineId_jour": { validee: bool, decisions: { creneauId: 'accepte'|'passe'|'garde' } } }
+};
+
+// ── Données simulées ─────────────────────────────────────────────────
+function genererPlanSimule() {
+  return {
+    semaines: [
+      {
+        semaine_id: 'a4338c80-ee36-4b56-92a9-4eacca4c096a',
+        numero: 1,
+        jours: [
+          {
+            jour: 'jeudi',
+            date: '2026-09-03',
+            explication: "Pour ce premier jeudi, j'ai placé uniquement des activités autonomes pour les GS, conformément à la règle S1 (R16) : toute l'attention doit être portée sur l'accueil des PS. Les créneaux PS démarrent avec Autour des livres, seule méthode autorisée en S1 (R15).",
+            conseil: "Vérifiez que l'ATSEM est disponible dès 8h50 pour les PS — la séance d'empreintes demande une présence individuelle.",
+            creneaux: [
+              {
+                creneau_id: 'sim-001', regle_id: 'acces-gs-p1-r01',
+                proposition: "Vers l'écriture GS — Séance 1 : Découvrir les lettres de l'alphabet",
+                methode: 'ACCÈS Vers l\'écriture GS', niveau: 'GS', role: 'AUTO', rotation: 'R1',
+                position_sequence: 1, regles_appliquees: ['R1', 'R7', 'R8', 'R16'],
+                justification: 'Prochaine dans l\'ordre de la séquence — GS en autonomie S1',
+                type: 'proposition', conflit: null
+              },
+              {
+                creneau_id: 'sim-002', regle_id: 'livres-tps-ps-r01',
+                proposition: "Autour des livres — Séance 1 : Visiter l'école",
+                methode: 'ACCÈS Autour des livres TPS-PS', niveau: 'PS', role: 'ENS', rotation: 'R1',
+                position_sequence: 1, regles_appliquees: ['R1', 'R5', 'R9', 'R15'],
+                justification: 'Seule méthode PS autorisée en S1',
+                type: 'proposition', conflit: null
+              },
+              {
+                creneau_id: 'sim-003', regle_id: 'acces-gs-p1-r02',
+                proposition: "Vers l'écriture GS — Séance 2 : Tracer des lignes droites",
+                methode: 'ACCÈS Vers l\'écriture GS', niveau: 'GS', role: 'AUTO', rotation: 'R1',
+                position_sequence: 2, regles_appliquees: ['R1', 'R7', 'R8', 'R16'],
+                justification: 'Prochaine dans l\'ordre — GS en autonomie S1',
+                type: 'proposition', conflit: null
+              },
+              {
+                creneau_id: 'sim-004', regle_id: 'livres-tps-ps-r02',
+                proposition: "Autour des livres — Séance 2 : Découvrir le matériel",
+                methode: 'ACCÈS Autour des livres TPS-PS', niveau: 'PS', role: 'ATSEM', rotation: 'R1',
+                position_sequence: 2, regles_appliquees: ['R1', 'R6', 'R9', 'R15'],
+                justification: 'Séance 2 après la séance 1 — même journée possible (pas de peinture)',
+                type: 'proposition', conflit: null
+              }
+            ]
+          },
+          {
+            jour: 'vendredi',
+            date: '2026-09-04',
+            explication: "Le vendredi de S1 suit la même logique : GS en autonomie, PS uniquement sur Autour des livres. J'ai prévu la séance 3 pour les PS qui est une observation de photos — elle peut se faire le lendemain de la séance 2 sans difficulté.",
+            conseil: "Si les PS ont bien accroché lors de la séance 2, vous pouvez enchaîner directement sur la séance 3 vendredi.",
+            creneaux: [
+              {
+                creneau_id: 'sim-005', regle_id: 'acces-gs-p1-r03',
+                proposition: "Vers l'écriture GS — Séance 3 : Reproduire des formes",
+                methode: 'ACCÈS Vers l\'écriture GS', niveau: 'GS', role: 'AUTO', rotation: 'R1',
+                position_sequence: 3, regles_appliquees: ['R1', 'R7', 'R8', 'R16'],
+                justification: 'Prochaine dans l\'ordre — GS en autonomie S1',
+                type: 'proposition', conflit: null
+              },
+              {
+                creneau_id: 'sim-006', regle_id: 'livres-tps-ps-r03',
+                proposition: "Autour des livres — Séance 3 : Observer et décrire des photos",
+                methode: 'ACCÈS Autour des livres TPS-PS', niveau: 'PS', role: 'ENS', rotation: 'R1',
+                position_sequence: 3, regles_appliquees: ['R1', 'R5', 'R9', 'R15'],
+                justification: 'Prochaine dans l\'ordre de la séquence',
+                type: 'proposition', conflit: null
+              },
+              {
+                creneau_id: 'sim-007', regle_id: null,
+                proposition: null, methode: null, niveau: 'GS', role: 'AUTO', rotation: 'R1',
+                position_sequence: null, regles_appliquees: [],
+                justification: 'Toutes les séances GS autonomes disponibles sont déjà placées cette semaine.',
+                type: 'vide', conflit: null
+              },
+              {
+                creneau_id: 'sim-008', regle_id: 'livres-tps-ps-r04',
+                proposition: "Autour des livres — Séance 4 : Découvrir les illustrations",
+                methode: 'ACCÈS Autour des livres TPS-PS', niveau: 'PS', role: 'ATSEM', rotation: 'R1',
+                position_sequence: 4, regles_appliquees: ['R1', 'R6', 'R9', 'R15'],
+                justification: 'Prochaine dans l\'ordre de la séquence',
+                type: 'proposition', conflit: null
+              }
+            ]
+          }
+        ]
+      },
+      {
+        semaine_id: '1710aaea-db55-4f55-bf75-dbd5258ead88',
+        numero: 2,
+        jours: [
+          {
+            jour: 'mardi',
+            date: '2026-09-08',
+            explication: "S2 — Les méthodes PS s'ouvrent. J'ai placé la première séance ACCÈS PS sur le créneau ENS PS, et j'ai détecté un conflit sur le créneau ATSEM GS que vous avez rempli manuellement.",
+            conseil: "Le conflit sur le créneau ATSEM GS est bloquant — la séance 8 de Phono GS nécessite que la séance 7 soit faite d'abord.",
+            creneaux: [
+              {
+                creneau_id: 'sim-009', regle_id: 'acces-ps-p1-r01',
+                proposition: "ACCÈS PS — Séance 1 : Associer des illustrations",
+                methode: 'ACCÈS Vers l\'écriture PS', niveau: 'PS', role: 'ENS', rotation: 'R1',
+                position_sequence: 1, regles_appliquees: ['R1', 'R5', 'R9'],
+                justification: 'Première séance ACCÈS PS — méthodes PS débloquées en S2',
+                type: 'proposition', conflit: null
+              },
+              {
+                creneau_id: 'sim-010', regle_id: 'phono-gs-p1-r08',
+                proposition: "Phono GS — Séance 8 : Segmenter des syllabes",
+                methode: 'ACCÈS Vers la phono GS', niveau: 'GS', role: 'ATSEM', rotation: 'R1',
+                position_sequence: 8, regles_appliquees: [],
+                justification: null,
+                type: 'conflit',
+                conflit: {
+                  message: "La séance 7 (prérequis) n'est pas encore marquée 'fait'. Vous avez placé la séance 8 manuellement — je recommande de corriger vers la séance 7.",
+                  severite: 'bloquant',
+                  regle_violee: 'R21'
+                }
+              },
+              {
+                creneau_id: 'sim-011', regle_id: 'acces-gs-p1-r05',
+                proposition: "Vers l'écriture GS — Séance 5 : Tracer des bâtons",
+                methode: 'ACCÈS Vers l\'écriture GS', niveau: 'GS', role: 'AUTO', rotation: 'R1',
+                position_sequence: 5, regles_appliquees: ['R1', 'R7', 'R8'],
+                justification: 'Prochaine dans l\'ordre de la séquence',
+                type: 'proposition', conflit: null
+              },
+              {
+                creneau_id: 'sim-012', regle_id: 'livres-tps-ps-r05',
+                proposition: "Autour des livres — Séance 5 : Associer deux photos identiques",
+                methode: 'ACCÈS Autour des livres TPS-PS', niveau: 'PS', role: 'AUTO', rotation: 'R1',
+                position_sequence: 5, regles_appliquees: ['R1', 'R7', 'R9'],
+                justification: 'Prochaine dans l\'ordre de la séquence',
+                type: 'proposition', conflit: null
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  };
+}
+
+// ── Ouvrir l'interface ────────────────────────────────────────────────
+function ouvrirOrganiser() {
+  // Charger le plan simulé
+  orgEtat.plan = genererPlanSimule();
+  orgEtat.semaineActive = 0;
+  orgEtat.jourActif = 0;
+  orgEtat.validations = {};
+
+  document.getElementById('organiser-fond').classList.add('actif');
+  renderOrgNavSemaines();
+  renderOrgJours();
+  renderOrgDetail();
+}
+
+function fermerOrganiser() {
+  document.getElementById('organiser-fond').classList.remove('actif');
+  // TODO : écrire en base les décisions validées quand branché sur l'API réelle
+}
+
+// ── Navigation semaines ───────────────────────────────────────────────
+function renderOrgNavSemaines() {
+  const { plan, semaineActive, validations } = orgEtat;
+  let html = '';
+  plan.semaines.forEach((s, i) => {
+    const joursValides = s.jours.filter(j => {
+      const key = `${s.semaine_id}_${j.jour}`;
+      return validations[key]?.validee;
+    }).length;
+    const tousValides = joursValides === s.jours.length;
+    const aConflit = s.jours.some(j =>
+      j.creneaux.some(c => c.type === 'conflit')
+    );
+    let cls = i === semaineActive ? 'active' : '';
+    if (tousValides) cls = 'validee';
+    if (aConflit && i !== semaineActive) cls += ' conflit';
+
+    const label = tousValides ? `✓ S${s.numero}` : aConflit ? `⚠ S${s.numero}` : `S${s.numero}`;
+    html += `<button class="org-sem-pill ${cls}" onclick="changerSemaine(${i})">${label}</button>`;
+  });
+  document.getElementById('org-nav-semaines').innerHTML = html;
+}
+
+function changerSemaine(index) {
+  orgEtat.semaineActive = index;
+  orgEtat.jourActif = 0;
+  renderOrgNavSemaines();
+  renderOrgJours();
+  renderOrgDetail();
+}
+
+// ── Colonne jours ─────────────────────────────────────────────────────
+function renderOrgJours() {
+  const { plan, semaineActive, jourActif, validations } = orgEtat;
+  const semaine = plan.semaines[semaineActive];
+  let html = '';
+  semaine.jours.forEach((j, i) => {
+    const key = `${semaine.semaine_id}_${j.jour}`;
+    const validee = validations[key]?.validee;
+    const aConflit = j.creneaux.some(c => c.type === 'conflit');
+    const statut = validee
+      ? '<span class="org-jour-statut valide">✓ Validé</span>'
+      : aConflit
+        ? '<span class="org-jour-statut en-cours">⚠ Conflit</span>'
+        : '<span class="org-jour-statut vide">À traiter</span>';
+    const jourLabel = { mardi: 'Mardi', jeudi: 'Jeudi', vendredi: 'Vendredi' }[j.jour] || j.jour;
+    const dateLabel = j.date ? new Date(j.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : '';
+    html += `<div class="org-jour-item${i === jourActif ? ' actif' : ''}" onclick="changerJour(${i})">
+      <div class="org-jour-nom">${jourLabel}</div>
+      <div class="org-jour-date">${dateLabel}</div>
+      ${statut}
+    </div>`;
+  });
+  document.getElementById('org-col-jours').innerHTML = html;
+}
+
+function changerJour(index) {
+  orgEtat.jourActif = index;
+  renderOrgJours();
+  renderOrgDetail();
+}
+
+// ── Détail journée ────────────────────────────────────────────────────
+function renderOrgDetail() {
+  const { plan, semaineActive, jourActif, validations } = orgEtat;
+  const semaine = plan.semaines[semaineActive];
+  const jour = semaine.jours[jourActif];
+  const key = `${semaine.semaine_id}_${jour.jour}`;
+  const jourLabel = { mardi: 'Mardi', jeudi: 'Jeudi', vendredi: 'Vendredi' }[jour.jour] || jour.jour;
+  const dateLabel = jour.date ? new Date(jour.date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }) : '';
+
+  // Bulle Marie
+  document.getElementById('org-marie-texte').textContent = jour.explication;
+  document.getElementById('org-marie-conseil').textContent = jour.conseil ? '💡 ' + jour.conseil : '';
+  document.querySelector('.org-marie-nom').textContent = `✨ Marie — ${jourLabel} ${dateLabel}`;
+
+  // Créneaux
+  const dec = validations[key]?.decisions || {};
+  let html = '';
+  let nbPropositions = 0, nbConflits = 0;
+
+  jour.creneaux.forEach(c => {
+    if (c.type === 'proposition') nbPropositions++;
+    if (c.type === 'conflit') nbConflits++;
+
+    const typeTop = c.type === 'conflit' ? 'conflit' : c.type === 'vide' ? 'vide' : 'impacte';
+    const decision = dec[c.creneau_id];
+
+    // Badges rôle + niveau
+    const roleClass = { 'ENS': 'org-badge-ens', 'ATSEM': 'org-badge-atsem', 'AUTO': 'org-badge-auto' }[c.role] || 'org-badge-auto';
+    const nivClass = c.niveau === 'GS' ? 'org-badge-gs' : 'org-badge-ps';
+    const badgeType = c.type === 'proposition'
+      ? '<span class="org-badge org-badge-marie">Proposé par Marie</span>'
+      : c.type === 'conflit'
+        ? '<span class="org-badge org-badge-conflit">⚠ Conflit</span>'
+        : '';
+
+    // Justification / conflit
+    let infoHtml = '';
+    if (c.type === 'proposition' && c.justification) {
+      infoHtml = `<div class="org-regle-pill">📋 ${c.regles_appliquees.join(' · ')} — ${c.justification}</div>`;
+    } else if (c.type === 'conflit' && c.conflit) {
+      infoHtml = `<div class="org-conflit-msg">⚠ ${c.conflit.message}</div>`;
+    } else if (c.type === 'vide') {
+      infoHtml = `<div class="org-vide-msg">${c.justification || 'Aucune séance disponible.'}</div>`;
+    }
+
+    // Actions
+    let actionsHtml = '';
+    if (c.type === 'proposition') {
+      const accepteClass = decision === 'accepte' ? ' accepte' : '';
+      actionsHtml = `
+        <div class="org-carte-actions">
+          <button class="org-btn-accepter${accepteClass}"
+            onclick="deciderCreneau('${semaine.semaine_id}', '${jour.jour}', '${c.creneau_id}', 'accepte')">
+            ${decision === 'accepte' ? '✓ Accepté' : '✓ Accepter'}
+          </button>
+          <button class="org-btn-modifier" onclick="alert('Modification — à implémenter')">✏ Modifier</button>
+          <button class="org-btn-ignorer" onclick="deciderCreneau('${semaine.semaine_id}', '${jour.jour}', '${c.creneau_id}', 'passe')">
+            Passer
+          </button>
+        </div>`;
+    } else if (c.type === 'conflit') {
+      actionsHtml = `
+        <div class="org-carte-actions">
+          <button class="org-btn-accepter" onclick="deciderCreneau('${semaine.semaine_id}', '${jour.jour}', '${c.creneau_id}', 'garde')">
+            Garder quand même
+          </button>
+          <button class="org-btn-modifier" onclick="alert('Correction — à implémenter')">✏ Corriger</button>
+        </div>`;
+    }
+
+    // Justification pour bouton (i)
+    const justifTooltip = c.type === 'proposition'
+      ? `Règles : ${c.regles_appliquees.join(', ')}\\n${c.justification}`
+      : c.type === 'conflit'
+        ? `Règle violée : ${c.conflit?.regle_violee}\\n${c.conflit?.message}`
+        : c.justification || '';
+
+    html += `<div class="org-carte ${c.type === 'proposition' ? 'impacte' : c.type}">
+      <div class="org-carte-top ${typeTop}">
+        <div style="flex:1">
+          <div class="org-carte-meta">
+            <span class="org-badge ${roleClass}">${c.role || '—'}</span>
+            <span class="org-badge ${nivClass}">${c.niveau || '—'}</span>
+            ${badgeType}
+          </div>
+          <div class="org-carte-seance">${c.proposition || (c.type === 'vide' ? 'Créneau vide' : c.proposition || '—')}</div>
+          ${c.methode ? `<div class="org-carte-methode">${c.methode}${c.position_sequence ? ' · pos. ' + c.position_sequence : ''}</div>` : ''}
+          ${infoHtml}
+        </div>
+        <button class="org-btn-i" onclick="afficherTooltip(event, \`${justifTooltip.replace(/`/g, "'")}\`)" title="Explication de Marie">i</button>
+      </div>
+      ${actionsHtml}
+    </div>`;
+  });
+
+  document.getElementById('org-creneaux-liste').innerHTML = html;
+
+  // Footer
+  const nbTotal = jour.creneaux.length;
+  document.getElementById('org-footer-info').textContent =
+    `${jourLabel} · ${nbTotal} créneaux · ${nbPropositions} propositions · ${nbConflits > 0 ? nbConflits + ' conflit(s) à résoudre' : 'aucun conflit'}`;
+
+  // Bouton valider jour
+  const btnValider = document.getElementById('org-btn-valider-jour');
+  if (validations[key]?.validee) {
+    btnValider.textContent = '✓ Journée validée — modifier';
+    btnValider.style.background = '#a8d5b5';
+  } else {
+    btnValider.textContent = `✓ Valider ${jourLabel}`;
+    btnValider.style.background = '#2d6a4f';
+  }
+}
+
+// ── Décision sur un créneau ────────────────────────────────────────────
+function deciderCreneau(semaineId, jour, creneauId, decision) {
+  const key = `${semaineId}_${jour}`;
+  if (!orgEtat.validations[key]) orgEtat.validations[key] = { validee: false, decisions: {} };
+  orgEtat.validations[key].decisions[creneauId] = decision;
+  renderOrgDetail();
+}
+
+// ── Valider la journée ────────────────────────────────────────────────
+function validerJour() {
+  const { plan, semaineActive, jourActif } = orgEtat;
+  const semaine = plan.semaines[semaineActive];
+  const jour = semaine.jours[jourActif];
+  const key = `${semaine.semaine_id}_${jour.jour}`;
+
+  if (!orgEtat.validations[key]) orgEtat.validations[key] = { validee: false, decisions: {} };
+  orgEtat.validations[key].validee = !orgEtat.validations[key].validee; // toggle pour permettre retour arrière
+
+  renderOrgNavSemaines();
+  renderOrgJours();
+  renderOrgDetail();
+
+  // Avancer automatiquement au jour suivant si pas encore au bout
+  const nbJours = semaine.jours.length;
+  if (orgEtat.validations[key].validee && jourActif < nbJours - 1) {
+    setTimeout(() => changerJour(jourActif + 1), 300);
+  }
+}
+
+// ── Tooltip (i) ────────────────────────────────────────────────────────
+function afficherTooltip(event, texte) {
+  event.stopPropagation();
+  const tooltip = document.getElementById('org-tooltip');
+  tooltip.textContent = texte;
+  tooltip.classList.add('actif');
+  const x = Math.min(event.clientX + 10, window.innerWidth - 300);
+  const y = Math.min(event.clientY + 10, window.innerHeight - 150);
+  tooltip.style.left = x + 'px';
+  tooltip.style.top = y + 'px';
+
+  // Fermer au prochain clic
+  setTimeout(() => {
+    document.addEventListener('click', () => {
+      tooltip.classList.remove('actif');
+    }, { once: true });
+  }, 0);
+}
+
+// =============================================
 // Lancement
 // =============================================
 chargerSemaine();
 </script>
+<!-- =============================================
+     SUPERPOSITION — Organiser mes créneaux
+============================================= -->
+<div class="organiser-fond" id="organiser-fond">
+  <div class="organiser-boite">
+
+    <!-- Header -->
+    <div class="org-header">
+      <div>
+        <div class="org-header-titre">✨ Organiser mes créneaux</div>
+        <div class="org-header-sous" id="org-sous-titre">Période 1 · Navigation libre — validation journée par journée</div>
+      </div>
+      <button class="org-btn-fermer-enreg" onclick="fermerOrganiser()">✓ Fermer et enregistrer</button>
+    </div>
+
+    <!-- Nav semaines -->
+    <div class="org-nav-semaines" id="org-nav-semaines"></div>
+
+    <!-- Corps -->
+    <div class="org-body">
+
+      <!-- Colonne jours -->
+      <div class="org-col-jours" id="org-col-jours"></div>
+
+      <!-- Détail journée -->
+      <div class="org-detail">
+        <div class="org-marie-bulle" id="org-marie-bulle">
+          <div class="org-marie-nom">✨ Marie</div>
+          <div class="org-marie-texte" id="org-marie-texte">Chargement…</div>
+          <div class="org-marie-conseil" id="org-marie-conseil"></div>
+        </div>
+        <div class="org-creneaux-liste" id="org-creneaux-liste"></div>
+        <div class="org-footer">
+          <div class="org-footer-info" id="org-footer-info">—</div>
+          <button class="org-btn-valider-jour" id="org-btn-valider-jour" onclick="validerJour()">✓ Valider ce jour</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Tooltip (i) -->
+<div class="org-tooltip" id="org-tooltip"></div>
+
 <!-- Popup suppression -->
 <div class="popup-fond" id="popup-suppression">
   <div class="popup-boite">

@@ -9,6 +9,7 @@
     { "src": "/api/semaine", "dest": "/api/semaine.js" },
     { "src": "/api/marie-preremplir", "dest": "/api/marie-preremplir.js" },
     { "src": "/api/marie-ateliers", "dest": "/api/marie-ateliers.js" },
+    { "src": "/api/seances-custom", "dest": "/api/seances-custom.js" },
     { "src": "/api/rituels", "dest": "/api/rituels.js" },
     { "src": "/api/rituels-ajouter", "dest": "/api/rituels-ajouter.js" },
     { "src": "/api/rituels-remplacer", "dest": "/api/rituels-remplacer.js" },

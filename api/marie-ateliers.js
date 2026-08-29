@@ -369,8 +369,7 @@ RAPPEL IMPÉRATIF — vérifie chaque point avant d'écrire ta réponse :
 
 7. JOURS OBLIGATOIRES : produis une entrée pour CHAQUE jour listé dans "jours" de chaque semaine. Si jours=["mardi","jeudi","vendredi"], ta réponse doit avoir 3 objets dans "jours". Ne jamais omettre un jour.
 
-8. TYPE VIDE : si aucune séance disponible ou mauvais type_dispositif → utilise type="vide" avec une justification claire. Ne jamais forcer une séance avec le mauvais dispositif.
-
+8. TYPE VIDE : si aucune séance disponible ou mauvais type_dispositif → utilise type="vide" avec proposition=null et regle_id=null. Ne jamais mettre type="proposition" avec proposition=null ou "—". Un créneau sans séance valide est toujours type="vide" avec une justification claire. Ne jamais forcer une séance avec le mauvais dispositif.
 Voici les données à analyser :
 ${JSON.stringify(contexte)}`;
 

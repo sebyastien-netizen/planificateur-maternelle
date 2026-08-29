@@ -376,6 +376,13 @@
       border: none; border-radius: 8px; padding: 7px 16px; cursor: pointer;
     }
     .org-btn-fermer-enreg:hover { background: #235a40; }
+    .org-btn-annuler {
+  padding: 7px 16px; font-size: 0.82rem;
+  background: white; color: #888;
+  border: 1px solid #ddd; border-radius: 8px; cursor: pointer;
+  margin-right: 8px;
+}
+.org-btn-annuler:hover { background: #f5f5f0; color: #333; }
 
     /* Nav semaines */
     .org-nav-semaines {
@@ -2069,9 +2076,57 @@ async function ouvrirOrganiser() {
   }
 }
 
-function fermerOrganiser() {
+function annulerOrganiser() {
   document.getElementById('organiser-fond').classList.remove('actif');
-  // TODO : écrire en base les décisions validées quand branché sur l'API réelle
+  orgEtat = { plan: null, semaineActive: 0, jourActif: 0, validations: {} };
+}
+
+async function fermerOrganiser() {
+  // Collecter tous les créneaux acceptés
+  const patches = [];
+  if (orgEtat.plan) {
+    for (const semaine of orgEtat.plan.semaines) {
+      for (const jour of semaine.jours) {
+        const key = `${semaine.semaine_id}_${jour.jour}`;
+        const decisions = orgEtat.validations[key]?.decisions || {};
+        for (const creneau of jour.creneaux) {
+          if (decisions[creneau.creneau_id] === 'accepte' && creneau.regle_id) {
+            patches.push({
+              creneau_id: creneau.creneau_id,
+              regle_id: creneau.regle_id,
+              activite: creneau.proposition
+            });
+          }
+        }
+      }
+    }
+  }
+
+  // Écrire en base
+  if (patches.length > 0) {
+    const token = sessionStorage.getItem('sb_access_token') || SUPABASE_ANON_KEY;
+    for (const p of patches) {
+      await fetch(`${SUPABASE_URL}/rest/v1/maternelle_creneaux?id=eq.${p.creneau_id}`, {
+        method: 'PATCH',
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify({
+          regle_id: p.regle_id,
+          activite: p.activite
+        })
+      });
+    }
+  }
+
+  document.getElementById('organiser-fond').classList.remove('actif');
+  orgEtat = { plan: null, semaineActive: 0, jourActif: 0, validations: {} };
+
+  // Recharger la semaine pour afficher les nouvelles séances
+  chargerSemaine();
 }
 
 // ── Navigation semaines ───────────────────────────────────────────────

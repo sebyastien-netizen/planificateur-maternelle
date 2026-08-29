@@ -1097,10 +1097,7 @@ function construireVue(momentMap, ordre, jours, tousCreneaux, periode) {
         const estAtelier = moment.toLowerCase().includes('atelier');
         const classeExtra = estAtelier ? ' cellule-ateliers' : '';
         if (cs.length > 0) {
-          const contenu = renderGroupe(cs, estRituel, jour, moment, heureDebut, heureFin);
-          const momentEncode = moment.replace(/'/g, "\\'");
-          const btnAjouter = '';
-          html += `<div class="cellule${classeExtra}">${contenu}${btnAjouter}</div>`;
+          html += `<div class="cellule${classeExtra}">${renderGroupe(cs, estRituel, jour, moment, heureDebut, heureFin)}</div>`;
         } else if (estRituel) {
           // Cellule rituel vide — cliquable pour ajouter
           html += `<div class="cellule${classeExtra}">

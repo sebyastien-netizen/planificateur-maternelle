@@ -681,11 +681,43 @@
   <div class="tiroir-corps">
     <div style="display:flex;flex-direction:column;gap:12px">
       <label style="font-size:0.8rem;color:#666">Intitulé de l'activité</label>
-      <input id="saisie-libre-texte" type="text" placeholder="Ex: Photo de classe, Réunion parents…"
+      <input id="saisie-libre-texte" type="text" placeholder="Ex: Jeu symbolique, Découverte des insectes…"
         style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:0.85rem;font-family:inherit">
-      <label style="font-size:0.8rem;color:#666">Notes (optionnel)</label>
-      <textarea id="saisie-libre-notes" rows="3" placeholder="Informations complémentaires…"
+
+      <div style="display:flex;gap:10px">
+        <div style="flex:1">
+          <label style="font-size:0.8rem;color:#666;display:block;margin-bottom:4px">Qui</label>
+          <select id="saisie-libre-role" style="width:100%;padding:9px;border:1px solid #ddd;border-radius:8px;font-size:0.85rem;font-family:inherit;background:white">
+            <option value="">— choisir —</option>
+            <option value="ENS">ENS</option>
+            <option value="ATSEM">ATSEM</option>
+            <option value="AUTO">AUTO</option>
+          </select>
+        </div>
+        <div style="flex:1">
+          <label style="font-size:0.8rem;color:#666;display:block;margin-bottom:4px">Niveau</label>
+          <select id="saisie-libre-niveau" style="width:100%;padding:9px;border:1px solid #ddd;border-radius:8px;font-size:0.85rem;font-family:inherit;background:white">
+            <option value="">— choisir —</option>
+            <option value="GS">GS</option>
+            <option value="PS">PS</option>
+            <option value="PS+GS">PS + GS</option>
+          </select>
+        </div>
+      </div>
+
+      <label style="font-size:0.8rem;color:#666">Matériel nécessaire (optionnel)</label>
+      <textarea id="saisie-libre-materiel" rows="2" placeholder="Ex: Peinture bleue, feuilles A3, tabliers…"
         style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:0.85rem;font-family:inherit;resize:vertical"></textarea>
+
+      <label style="font-size:0.8rem;color:#666">Notes (optionnel)</label>
+      <textarea id="saisie-libre-notes" rows="2" placeholder="Informations complémentaires…"
+        style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:0.85rem;font-family:inherit;resize:vertical"></textarea>
+
+      <label style="display:flex;align-items:center;gap:8px;font-size:0.8rem;color:#666;cursor:pointer">
+        <input type="checkbox" id="saisie-libre-sauvegarder" checked style="width:16px;height:16px">
+        Sauvegarder dans "Mes séances" pour réutilisation
+      </label>
+
       <button onclick="validerSaisieLibre()"
         style="background:#2d6a4f;color:white;border:none;border-radius:8px;padding:10px;font-size:0.85rem;cursor:pointer;font-weight:600">
         ✓ Enregistrer
@@ -1208,6 +1240,10 @@ function ouvrirMenuContextuel(event, creneauId, jour, moment, niveau, heureDeb, 
 function ouvrirSaisieLibre(creneauId, jour, moment) {
   document.getElementById('saisie-libre-texte').value = '';
   document.getElementById('saisie-libre-notes').value = '';
+  document.getElementById('saisie-libre-materiel').value = '';
+  document.getElementById('saisie-libre-role').value = '';
+  document.getElementById('saisie-libre-niveau').value = '';
+  document.getElementById('saisie-libre-sauvegarder').checked = true;
   etatApp.menuCreneauId = creneauId;
   document.getElementById('saisie-overlay').classList.add('actif');
   document.getElementById('tiroir-saisie').classList.add('actif');
@@ -1223,38 +1259,109 @@ async function validerSaisieLibre() {
   const texte = document.getElementById('saisie-libre-texte').value.trim();
   if (!texte) { alert('Veuillez saisir un intitulé.'); return; }
   const notes = document.getElementById('saisie-libre-notes').value.trim();
+  const materiel = document.getElementById('saisie-libre-materiel').value.trim();
+  const role = document.getElementById('saisie-libre-role').value;
+  const niveau = document.getElementById('saisie-libre-niveau').value;
+  const sauvegarder = document.getElementById('saisie-libre-sauvegarder').checked;
   const token = sessionStorage.getItem('sb_access_token') || SUPABASE_ANON_KEY;
 
+  // Mapping role → type_dispositif
+  const dispositifMap = { ENS: 'dirigé', ATSEM: 'semi-dirigé', AUTO: 'autonome' };
+  const typeDisp = dispositifMap[role] || null;
+
   try {
-    const semaine = semainesDePeriode[indexSemaineActive];
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/maternelle_creneaux`, {
-      method: 'POST',
-      headers: {
-        'apikey': SUPABASE_ANON_KEY,
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-        'Prefer': 'return=minimal'
-      },
-      body: JSON.stringify({
-        user_id: '6c1b1768-457b-4777-b1d9-a309f2fe2cef',
-        semaine_id: semaine.id,
-        jour: etatApp.menuJour,
-        moment: etatApp.menuMoment || 'Divers',
-        heure_debut: etatApp.menuHeureDeb || null,
-        heure_fin: etatApp.menuHeureFin || null,
-        activite: texte,
-        notes: notes || null,
-        type: 'libre',
-        statut: 'a_faire',
-        periode: etatApp.menuMoment && ['Sieste PS','Réveil PS','Phonologie','Maths','Sciences / Découverte','Anglais / Arts','Écriture GS'].includes(etatApp.menuMoment) ? 'aprem' : 'matin'
-      })
-    });
-        if (!res.ok) {
-      const detail = await res.json();
-      throw new Error(JSON.stringify(detail));
+    // 1. Si sauvegarde demandée → INSERT dans maternelle_regles
+    let regleId = null;
+    if (sauvegarder && texte) {
+      const idCourt = Math.random().toString(36).substring(2, 10);
+      regleId = `custom-${idCourt}`;
+
+      // Récupérer la période active
+      const periodeId = document.getElementById('select-periode').value;
+      const periodeRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/maternelle_periodes?id=eq.${periodeId}&select=numero`,
+        { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${token}` } }
+      );
+      const periodes = await periodeRes.json();
+      const numPeriode = periodes[0]?.numero || 1;
+
+      await fetch(`${SUPABASE_URL}/rest/v1/maternelle_regles`, {
+        method: 'POST',
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          Prefer: 'return=minimal'
+        },
+        body: JSON.stringify({
+          id: regleId,
+          source: 'Mes séances',
+          description: texte,
+          niveau: niveau || null,
+          type_dispositif: typeDisp,
+          exclu_marie: true,
+          periode: numPeriode,
+          materiel_a_preparer: materiel || null,
+          ordre_sequence: 1
+        })
+      });
     }
+
+    // 2. PATCH ou POST sur maternelle_creneaux
+    const semaine = semainesDePeriode[indexSemaineActive];
+    const creneauId = etatApp.menuCreneauId;
+    const periodeM = etatApp.menuMoment && ['Sieste PS','Réveil PS','Phonologie','Maths','Sciences / Découverte','Anglais / Arts','Écriture GS'].includes(etatApp.menuMoment) ? 'aprem' : 'matin';
+
+    if (creneauId) {
+      // Créneau existant — PATCH
+      await fetch(`${SUPABASE_URL}/rest/v1/maternelle_creneaux?id=eq.${creneauId}`, {
+        method: 'PATCH',
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          Prefer: 'return=minimal'
+        },
+        body: JSON.stringify({
+          activite: texte,
+          notes: notes || null,
+          regle_id: regleId,
+          role: role || null,
+          niveau: niveau || null,
+          type: 'libre'
+        })
+      });
+    } else {
+      // Nouveau créneau — POST
+      await fetch(`${SUPABASE_URL}/rest/v1/maternelle_creneaux`, {
+        method: 'POST',
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          Prefer: 'return=minimal'
+        },
+        body: JSON.stringify({
+          user_id: '6c1b1768-457b-4777-b1d9-a309f2fe2cef',
+          semaine_id: semaine.id,
+          jour: etatApp.menuJour,
+          moment: etatApp.menuMoment || 'Divers',
+          heure_debut: etatApp.menuHeureDeb || null,
+          heure_fin: etatApp.menuHeureFin || null,
+          activite: texte,
+          notes: notes || null,
+          regle_id: regleId,
+          role: role || null,
+          niveau: niveau || null,
+          type: 'libre',
+          statut: 'a_faire',
+          periode: periodeM
+        })
+      });
+    }
+
     fermerSaisieLibre();
-    location.reload();
+    chargerSemaine();
   } catch (err) {
     alert('Erreur : ' + err.message);
   }

@@ -361,6 +361,14 @@ RAPPEL IMPÉRATIF avant d'analyser les données :
    - le bon niveau (GS ou PS selon le créneau)
    - le bon type_dispositif (dirigé/semi-dirigé/autonome selon le rôle)
 
+6. STRUCTURE OBLIGATOIRE PAR JOUR — exactement 4 créneaux distincts :
+   - 1 créneau ENS GS (dirigé, niveau GS)
+   - 1 créneau ATSEM PS (semi-dirigé, niveau PS)
+   - 1 créneau AUTO GS (autonome, niveau GS)
+   - 1 créneau AUTO PS (autonome, niveau PS)
+   Les 4 rôles sont DIFFÉRENTS. Ne jamais répéter le même rôle+niveau deux fois dans la même journée.
+   R1 et R2 contiennent les mêmes séances — tu n'as à proposer qu'UNE séance par rôle+niveau, pas deux.
+
 Voici les données à analyser :
 ${JSON.stringify(contexte)}`;
 

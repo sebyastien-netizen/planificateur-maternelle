@@ -1285,26 +1285,22 @@ async function validerSaisieLibre() {
       const periodes = await periodeRes.json();
       const numPeriode = periodes[0]?.numero || 1;
 
-      await fetch(`${SUPABASE_URL}/rest/v1/maternelle_regles`, {
+      const customRes = await fetch('/api/seances-custom', {
         method: 'POST',
-        headers: {
-          apikey: SUPABASE_ANON_KEY,
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          Prefer: 'return=minimal'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           id: regleId,
-          source: 'Mes séances',
           description: texte,
           niveau: niveau || null,
           type_dispositif: typeDisp,
-          exclu_marie: true,
           periode: numPeriode,
-          materiel_a_preparer: materiel || null,
-          ordre_sequence: 1
+          materiel_a_preparer: materiel || null
         })
       });
+      if (!customRes.ok) {
+        const err = await customRes.json();
+        throw new Error(err.error || 'Erreur sauvegarde séance');
+      }
     }
 
     // 2. PATCH ou POST sur maternelle_creneaux

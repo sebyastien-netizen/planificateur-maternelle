@@ -371,6 +371,8 @@ RAPPEL IMPÉRATIF — vérifie chaque point avant d'écrire ta réponse :
 
 8. TYPE VIDE : si aucune séance disponible ou mauvais type_dispositif → utilise type="vide" avec proposition=null et regle_id=null. Ne jamais mettre type="proposition" avec proposition=null ou "—". Un créneau sans séance valide est toujours type="vide" avec une justification claire. Ne jamais forcer une séance avec le mauvais dispositif. En S1 spécifiquement, le créneau AUTO PS doit être type="vide" car les séances autonomes PS d'Autour des livres n'apparaissent qu'en milieu de séquence — il n'en existe pas en début de séquence.
 
+9. CRÉNEAUX DÉJÀ REMPLIS : un créneau avec regle_id_actuel != null OU activite_actuelle != null est déjà occupé. Tu ne proposes RIEN dessus. Ne l'inclus pas dans ta réponse du tout — saute-le. Si la séance déjà placée viole une règle → inclus-le avec type="conflit" uniquement. Ne jamais écraser une séance déjà placée manuellement par l'enseignante.
+
 Voici les données à analyser :
 ${JSON.stringify(contexte)}`;
 

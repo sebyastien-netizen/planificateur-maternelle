@@ -36,7 +36,8 @@ module.exports = async function handler(req, res) {
       exclu_marie: true,
       periode: periode || 1,
       materiel_a_preparer: materiel_a_preparer || null,
-      ordre_sequence: 1
+      ordre_sequence: 1,
+      frequence_type: 'ponctuel'
     };
 
     const r = await fetch(`${SUPABASE_URL}/rest/v1/maternelle_regles`, {

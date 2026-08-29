@@ -1102,7 +1102,7 @@ function construireVue(momentMap, ordre, jours, tousCreneaux, periode) {
           // Cellule rituel vide — cliquable pour ajouter
           html += `<div class="cellule${classeExtra}">
             <div class="cellule-vide" style="cursor:pointer;border-color:#c4b0e0;color:#9b7ec8"
-              onclick="ouvrirMenuAjouter(event, null, '${jour}', '${moment}', null, '${heureDebut}', '${heureFin}')">
+                            onclick="ouvrirMenuContextuel(event, null, '${jour}', '${moment}', null, '${heureDebut}', '${heureFin}', false)"
               + Ajouter un rituel
             </div>
           </div>`;

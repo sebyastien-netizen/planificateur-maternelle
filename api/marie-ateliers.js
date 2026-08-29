@@ -337,6 +337,33 @@ module.exports = async function handler(req, res) {
     };
 
     // ── 8. APPEL API OPENAI ───────────────────────────────────────────────
+    // Rappel des règles critiques injectées directement dans le message user
+    const rappelRegles = `
+RAPPEL IMPÉRATIF avant d'analyser les données :
+
+1. COHÉRENCE DISPOSITIF (non-négociable) :
+   - role=ENS → UNIQUEMENT type_dispositif='dirigé'
+   - role=ATSEM → UNIQUEMENT type_dispositif='semi-dirigé'
+   - role=AUTO → UNIQUEMENT type_dispositif='autonome'
+   Violation = erreur critique. Vérifie chaque proposition avant de l'écrire.
+
+2. COHÉRENCE NIVEAU (non-négociable) :
+   - niveau=GS → UNIQUEMENT séances de niveau GS
+   - niveau=PS → UNIQUEMENT séances de niveau PS
+
+3. SEMAINE S1 — RÈGLES ABSOLUES :
+   - PS : UNIQUEMENT la méthode 'ACCÈS Autour des livres TPS-PS' en S1. Aucune autre méthode PS.
+   - GS : UNIQUEMENT des séances de type_dispositif='autonome' en S1. Aucune séance dirigée ou semi-dirigée GS en S1.
+
+4. S7 : jamais de proposition sur la semaine numéro 7.
+
+5. Pour chaque créneau, vérifie dans prochaines_regles que la regle_id proposée a bien :
+   - le bon niveau (GS ou PS selon le créneau)
+   - le bon type_dispositif (dirigé/semi-dirigé/autonome selon le rôle)
+
+Voici les données à analyser :
+${JSON.stringify(contexte)}`;
+
     const anthropicRes = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -344,12 +371,12 @@ module.exports = async function handler(req, res) {
         'Authorization': `Bearer ${OPENAI_API_KEY}`
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'gpt-4o',
         max_tokens: 8000,
         response_format: { type: 'json_object' },
         messages: [
           { role: 'system', content: PROMPT_MARIE },
-          { role: 'user', content: JSON.stringify(contexte) }
+          { role: 'user', content: rappelRegles }
         ]
       })
     });

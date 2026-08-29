@@ -6,7 +6,7 @@
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
-const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const USER_ID = '6c1b1768-457b-4777-b1d9-a309f2fe2cef';
 
 const PROMPT_MARIE = `# PROMPT SYSTÈME — Marie, moteur de proposition ateliers
@@ -336,19 +336,19 @@ module.exports = async function handler(req, res) {
       liens_inter_methodes: liensInterMethodes
     };
 
-    // ── 8. APPEL API ANTHROPIC ────────────────────────────────────────────
-    const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
+    // ── 8. APPEL API OPENAI ───────────────────────────────────────────────
+    const anthropicRes = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01'
+        'Authorization': `Bearer ${OPENAI_API_KEY}`
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
+        model: 'gpt-4o-mini',
         max_tokens: 8000,
-        system: PROMPT_MARIE,
+        response_format: { type: 'json_object' },
         messages: [
+          { role: 'system', content: PROMPT_MARIE },
           { role: 'user', content: JSON.stringify(contexte) }
         ]
       })
@@ -356,11 +356,11 @@ module.exports = async function handler(req, res) {
 
     if (!anthropicRes.ok) {
       const err = await anthropicRes.text();
-      throw new Error(`Anthropic API error : ${err}`);
+      throw new Error(`OpenAI API error : ${err}`);
     }
 
     const anthropicData = await anthropicRes.json();
-    const texte = anthropicData.content[0].text.trim();
+    const texte = anthropicData.choices?.[0]?.message?.content || '{}';
 
     // ── 9. PARSE JSON MARIE ───────────────────────────────────────────────
     let plan;

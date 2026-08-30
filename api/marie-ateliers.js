@@ -3,6 +3,7 @@
 // POST /api/marie-ateliers
 // Body : { periode_id: UUID }
 // Retourne : { ok: true, plan: { semaines: [...] } }
+// Stratégie : 2 appels séquentiels (S1-S3 puis S4-S6), R1 uniquement
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
@@ -109,7 +110,7 @@ R1 et R2 contiennent les mêmes séances — tu proposes UNE séance par rôle+n
 
 ## CE QUE TU REÇOIS
 
-Tu reçois un objet JSON avec : periode, semaines (avec leurs créneaux ateliers), progression (dernière séance fait par méthode/niveau), prochaines_regles (séances disponibles), liens_inter_methodes.
+Tu reçois un objet JSON avec : periode, semaines (avec leurs créneaux ateliers R1 uniquement), progression (dernière séance faite par méthode/niveau), prochaines_regles (séances disponibles), liens_inter_methodes.
 
 ## CE QUE TU DOIS PRODUIRE
 
@@ -171,177 +172,109 @@ Règles de production :
 - Conseil actionnable avec impact concret
 - Cite les numéros de règles (R1, R7...) sans les répéter en entier`;
 
-module.exports = async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Méthode non autorisée' });
+// ── Fonction appel API Marie (Anthropic ou OpenAI) ────────────────────
+async function appelMarie(promptUser, tokensMax) {
+  const isAnthropic = MARIE_MODEL.startsWith('claude');
 
-  const { periode_id } = req.body;
-  if (!periode_id) return res.status(400).json({ error: 'periode_id manquant' });
-
-  const sbHeaders = {
-    'apikey': SUPABASE_SERVICE_KEY,
-    'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-    'Content-Type': 'application/json'
-  };
-
-  async function sbGet(path) {
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { headers: sbHeaders });
-    if (!r.ok) throw new Error(`Supabase ${path} : ${r.status}`);
-    return r.json();
-  }
-
-  try {
-
-    // ── 1. PÉRIODE ───────────────────────────────────────────────────────
-    const periodes = await sbGet(
-      `maternelle_periodes?id=eq.${periode_id}&select=id,numero,date_debut,date_fin`
-    );
-    if (!periodes.length) return res.status(404).json({ error: 'Période introuvable' });
-    const periode = periodes[0];
-
-    // ── 2. SEMAINES (S1 à S6 — S7 exclue) ───────────────────────────────
-    const semaines = await sbGet(
-      `maternelle_semaines?periode_id=eq.${periode_id}&numero_semaine=lt.7&select=id,numero_semaine,date_lundi,a_mardi&order=numero_semaine.asc`
-    );
-
-    // ── 3. CRÉNEAUX ATELIERS par semaine ─────────────────────────────────
-    const semaineIds = semaines.map(s => s.id).join(',');
-    const creneauxAteliers = await sbGet(
-      `maternelle_creneaux?semaine_id=in.(${semaineIds})` +
-      `&moment=in.(Ateliers rotation 1,Ateliers rotation 2)` +
-      `&statut_planification=eq.actif` +
-      `&select=id,semaine_id,jour,moment,role,niveau,regle_id,activite,statut,statut_planification` +
-      `&order=jour.asc,moment.asc`
-    );
-
-    // ── 4. PROGRESSION — dernière séance "fait" par source+niveau ────────
-    const creneauxProgression = await sbGet(
-      `maternelle_creneaux?semaine_id=in.(${semaineIds})` +
-      `&regle_id=not.is.null` +
-      `&statut=neq.a_faire` +
-      `&select=regle_id,statut,niveau` +
-      `&order=regle_id.asc`
-    );
-
-    const regles = await sbGet(
-      `maternelle_regles?periode=eq.${periode.numero}` +
-      `&exclu_marie=eq.false` +
-      `&select=id,source,niveau,sequence_id,ordre_sequence,description,type_dispositif,est_introduction` +
-      `&order=sequence_id.asc,ordre_sequence.asc`
-    );
-
-    const progressionMap = {};
-    for (const cr of creneauxProgression) {
-      if (!cr.regle_id) continue;
-      const regle = regles.find(r => r.id === cr.regle_id);
-      if (!regle) continue;
-      const key = `${regle.source}__${regle.niveau}`;
-      const existing = progressionMap[key];
-      if (!existing || regle.ordre_sequence > existing.ordre_sequence) {
-        progressionMap[key] = { ...regle, statut_derniere: cr.statut };
-      }
-    }
-
-    const repousseeMap = {};
-    for (const cr of creneauxProgression) {
-      if (!cr.regle_id) continue;
-      if (cr.statut === 'non_fait') {
-        repousseeMap[cr.regle_id] = (repousseeMap[cr.regle_id] || 0) + 1;
-      }
-    }
-
-    const progression = Object.values(progressionMap).map(r => ({
-      regle_id: r.id,
-      source: r.source,
-      niveau: r.niveau,
-      sequence_id: r.sequence_id,
-      ordre_sequence: r.ordre_sequence,
-      description: r.description,
-      type_dispositif: r.type_dispositif,
-      statut_derniere: r.statut_derniere,
-      nb_fois_repoussee: repousseeMap[r.id] || 0,
-      badges: r.est_introduction ? ['INTRODUCTION'] : []
-    }));
-
-    // ── 5. PROCHAINES RÈGLES disponibles par source+niveau ───────────────
-    const prochainesRegles = [];
-    const sourceNiveaux = [...new Set(regles.map(r => `${r.source}__${r.niveau}`))];
-
-    for (const key of sourceNiveaux) {
-      const [source, niveau] = key.split('__');
-      const derniere = progressionMap[key];
-      const ordreMin = derniere ? derniere.ordre_sequence : 0;
-
-      const suivantes = regles
-        .filter(r => r.source === source && r.niveau === niveau && r.ordre_sequence > ordreMin)
-        .slice(0, 5);
-
-      for (const r of suivantes) {
-        prochainesRegles.push({
-          regle_id: r.id,
-          source: r.source,
-          niveau: r.niveau,
-          sequence_id: r.sequence_id,
-          ordre_sequence: r.ordre_sequence,
-          description: r.description,
-          type_dispositif: r.type_dispositif,
-          badges: r.est_introduction ? ['INTRODUCTION'] : [],
-          nb_fois_repoussee: repousseeMap[r.id] || 0
-        });
-      }
-    }
-
-    // ── 6. LIENS INTER-MÉTHODES (fallback [] si table absente) ───────────
-    let liensInterMethodes = [];
-    try {
-      liensInterMethodes = await sbGet(
-        `maternelle_liens_methodes?select=regle_source_id,regle_cible_id,delta_positions,note`
-      );
-    } catch {
-      // Table pas encore créée — on continue avec []
-    }
-
-    // ── 7. CONSTRUCTION DU CONTEXTE JSON ─────────────────────────────────
-    const contexte = {
-      periode: {
-        numero: periode.numero,
-        date_debut: periode.date_debut,
-        date_fin: periode.date_fin
+  if (isAnthropic) {
+    const r = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01'
       },
-      semaines: semaines.map(s => {
-        const jours = [];
-        if (s.a_mardi) jours.push('mardi');
-        jours.push('jeudi', 'vendredi');
-
-        const creneauxSemaine = creneauxAteliers
-          .filter(c => c.semaine_id === s.id)
-          .map(c => ({
-            creneau_id: c.id,
-            jour: c.jour,
-            rotation: c.moment === 'Ateliers rotation 1' ? 'R1' : 'R2',
-            role: c.role,
-            niveau: c.niveau,
-            regle_id_actuel: c.regle_id || null,
-            activite_actuelle: c.activite || null,
-            statut: c.statut,
-            statut_planification: c.statut_planification
-          }));
-
-        return {
-          semaine_id: s.id,
-          numero: s.numero_semaine,
-          date_lundi: s.date_lundi,
-          a_mardi: s.a_mardi,
-          jours,
-          creneaux_ateliers: creneauxSemaine
-        };
-      }),
-      progression,
-      prochaines_regles: prochainesRegles,
-      liens_inter_methodes: liensInterMethodes
+      body: JSON.stringify({
+        model: MARIE_MODEL,
+        max_tokens: tokensMax,
+        system: PROMPT_MARIE,
+        messages: [{ role: 'user', content: promptUser }]
+      })
+    });
+    if (!r.ok) throw new Error(`Anthropic API error : ${await r.text()}`);
+    const data = await r.json();
+    return {
+      texte: data.content?.[0]?.text || '{}',
+      tokensInput: data.usage?.input_tokens || 0,
+      tokensOutput: data.usage?.output_tokens || 0
     };
 
-    // ── 8. APPEL API OPENAI ───────────────────────────────────────────────
-    const rappelRegles = `
+  } else {
+    const r = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: MARIE_MODEL,
+        max_tokens: tokensMax,
+        response_format: { type: 'json_object' },
+        messages: [
+          { role: 'system', content: PROMPT_MARIE },
+          { role: 'user', content: promptUser }
+        ]
+      })
+    });
+    if (!r.ok) throw new Error(`OpenAI API error : ${await r.text()}`);
+    const data = await r.json();
+    return {
+      texte: data.choices?.[0]?.message?.content || '{}',
+      tokensInput: data.usage?.prompt_tokens || 0,
+      tokensOutput: data.usage?.completion_tokens || 0
+    };
+  }
+}
+
+// ── Parse JSON Marie avec nettoyage markdown ──────────────────────────
+function parseMarieJson(texte) {
+  const clean = texte.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
+  return JSON.parse(clean);
+}
+
+// ── Construit le rappel de règles + contexte pour un bloc de semaines ─
+function buildPrompt(periode, semainesBloc, creneauxAteliers, progression, prochainesRegles, liensInterMethodes, label) {
+  const contexte = {
+    periode: {
+      numero: periode.numero,
+      date_debut: periode.date_debut,
+      date_fin: periode.date_fin
+    },
+    semaines: semainesBloc.map(s => {
+      const jours = [];
+      if (s.a_mardi) jours.push('mardi');
+      jours.push('jeudi', 'vendredi');
+
+      // R1 uniquement — R2 identique, l'enseignante le remplit elle-même
+      const creneauxSemaine = creneauxAteliers
+        .filter(c => c.semaine_id === s.id && c.moment === 'Ateliers rotation 1')
+        .map(c => ({
+          creneau_id: c.id,
+          jour: c.jour,
+          rotation: 'R1',
+          role: c.role,
+          niveau: c.niveau,
+          regle_id_actuel: c.regle_id || null,
+          activite_actuelle: c.activite || null,
+          statut: c.statut,
+          statut_planification: c.statut_planification
+        }));
+
+      return {
+        semaine_id: s.id,
+        numero: s.numero_semaine,
+        date_lundi: s.date_lundi,
+        a_mardi: s.a_mardi,
+        jours,
+        creneaux_ateliers: creneauxSemaine
+      };
+    }),
+    progression,
+    prochaines_regles: prochainesRegles,
+    liens_inter_methodes: liensInterMethodes
+  };
+
+  return `
 RAPPEL IMPÉRATIF — vérifie chaque point avant d'écrire ta réponse :
 
 1. COHÉRENCE DISPOSITIF (non-négociable) :
@@ -371,80 +304,251 @@ RAPPEL IMPÉRATIF — vérifie chaque point avant d'écrire ta réponse :
 
 7. JOURS OBLIGATOIRES : produis une entrée pour CHAQUE jour listé dans "jours" de chaque semaine. Si jours=["mardi","jeudi","vendredi"], ta réponse doit avoir 3 objets dans "jours". Ne jamais omettre un jour.
 
-8. PROGRESSION HEBDOMADAIRE CONTINUE : sur une même semaine, ne jamais proposer deux fois la même séance sur deux jours différents. Chaque jour doit faire avancer la progression dans la méthode — si la séance N est placée le mardi, propose la séance N+1 le jeudi, puis N+2 le vendredi (si le dispositif et le niveau le permettent). Ne jamais stationner sur la même séance plusieurs jours d'affilée. L'objectif est de couvrir autant de séances que possible sur la période en avançant systématiquement dans l'ordre des séquences.
+8. PROGRESSION HEBDOMADAIRE CONTINUE : sur une même semaine, ne jamais proposer deux fois la même séance sur deux jours différents. Chaque jour doit faire avancer la progression dans la méthode — si la séance N est placée le mardi, propose la séance N+1 le jeudi, puis N+2 le vendredi (si le dispositif et le niveau le permettent). Ne jamais stationner sur la même séance plusieurs jours d'affilée.
 
-9. TYPE VIDE : si aucune séance disponible ou mauvais type_dispositif → utilise type="vide" avec proposition=null et regle_id=null. Ne jamais mettre type="proposition" avec proposition=null ou "—". Un créneau sans séance valide est toujours type="vide" avec une justification claire. Ne jamais forcer une séance avec le mauvais dispositif. En S1 spécifiquement, le créneau AUTO PS doit être type="vide" car les séances autonomes PS d'Autour des livres n'apparaissent qu'en milieu de séquence — il n'en existe pas en début de séquence.
+9. TYPE VIDE : si aucune séance disponible ou mauvais type_dispositif → utilise type="vide" avec proposition=null et regle_id=null. Ne jamais mettre type="proposition" avec proposition=null ou "—". Un créneau sans séance valide est toujours type="vide" avec une justification claire. En S1 spécifiquement, le créneau AUTO PS doit être type="vide" car les séances autonomes PS d'Autour des livres n'apparaissent qu'en milieu de séquence.
 
 10. CRÉNEAUX DÉJÀ REMPLIS : un créneau avec regle_id_actuel != null OU activite_actuelle != null est déjà occupé. Tu ne proposes RIEN dessus. Ne l'inclus pas dans ta réponse du tout — saute-le. Si la séance déjà placée viole une règle → inclus-le avec type="conflit" uniquement. Ne jamais écraser une séance déjà placée manuellement par l'enseignante.
 
-11. UNICITÉ DES CRENEAU_ID : chaque creneau_id dans ta réponse doit être unique sur l'ensemble du plan. Ne jamais réutiliser le même creneau_id dans deux jours différents ou deux semaines différentes. Chaque créneau du contexte a un id unique — utilise exactement cet id, une seule fois dans ta réponse.
+11. UNICITÉ DES CRENEAU_ID : chaque creneau_id dans ta réponse doit être unique sur l'ensemble du plan. Ne jamais réutiliser le même creneau_id dans deux jours ou deux semaines différentes.
+
+12. BLOC TRAITÉ : tu traites UNIQUEMENT les semaines ${label}. Ne produis des entrées que pour ces semaines.
 
 Voici les données à analyser :
 ${JSON.stringify(contexte)}`;
+}
 
-    // ── 8. APPEL API — switch provider selon MARIE_MODEL ─────────────────
-    const isAnthropic = MARIE_MODEL.startsWith('claude');
-    let texte, tokensInput, tokensOutput;
+// ── Mise à jour de la progression après un plan partiel ──────────────
+function mettreAJourProgression(planPartiel, progression, prochainesRegles, regles) {
+  for (const semaine of planPartiel.semaines || []) {
+    for (const jour of semaine.jours || []) {
+      for (const c of jour.creneaux || []) {
+        if (c.type !== 'proposition' || !c.regle_id) continue;
+        const regle = regles.find(r => r.id === c.regle_id);
+        if (!regle) continue;
+        const key = `${regle.source}__${regle.niveau}`;
+        const existant = progression.find(p => p.source === regle.source && p.niveau === regle.niveau);
+        if (!existant) {
+          progression.push({
+            regle_id: regle.id,
+            source: regle.source,
+            niveau: regle.niveau,
+            sequence_id: regle.sequence_id,
+            ordre_sequence: regle.ordre_sequence,
+            description: regle.description,
+            type_dispositif: regle.type_dispositif,
+            statut_derniere: 'a_faire',
+            nb_fois_repoussee: 0,
+            badges: regle.est_introduction ? ['INTRODUCTION'] : []
+          });
+        } else if (regle.ordre_sequence > existant.ordre_sequence) {
+          existant.regle_id = regle.id;
+          existant.ordre_sequence = regle.ordre_sequence;
+          existant.description = regle.description;
+        }
 
-    if (isAnthropic) {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': ANTHROPIC_API_KEY,
-          'anthropic-version': '2023-06-01'
-        },
-        body: JSON.stringify({
-          model: MARIE_MODEL,
-          max_tokens: 50000,
-          system: PROMPT_MARIE,
-          messages: [{ role: 'user', content: rappelRegles }]
-        })
+        // Retirer la règle posée des prochaines_regles et avancer la fenêtre
+        const idx = prochainesRegles.findIndex(r => r.regle_id === c.regle_id);
+        if (idx !== -1) prochainesRegles.splice(idx, 1);
+      }
+    }
+  }
+
+  // Recompléter prochaines_regles jusqu'à 5 par source+niveau
+  const sourceNiveaux = [...new Set(regles.map(r => `${r.source}__${r.niveau}`))];
+  for (const key of sourceNiveaux) {
+    const [source, niveau] = key.split('__');
+    const derniere = progression.find(p => p.source === source && p.niveau === niveau);
+    const ordreMin = derniere ? derniere.ordre_sequence : 0;
+    const dejaDans = prochainesRegles.filter(r => r.source === source && r.niveau === niveau).length;
+    const manquantes = 5 - dejaDans;
+    if (manquantes <= 0) continue;
+    const aAjouter = regles
+      .filter(r => r.source === source && r.niveau === niveau && r.ordre_sequence > ordreMin)
+      .filter(r => !prochainesRegles.find(pr => pr.regle_id === r.id))
+      .slice(0, manquantes);
+    for (const r of aAjouter) {
+      prochainesRegles.push({
+        regle_id: r.id,
+        source: r.source,
+        niveau: r.niveau,
+        sequence_id: r.sequence_id,
+        ordre_sequence: r.ordre_sequence,
+        description: r.description,
+        type_dispositif: r.type_dispositif,
+        badges: r.est_introduction ? ['INTRODUCTION'] : [],
+        nb_fois_repoussee: 0
       });
-      if (!res.ok) throw new Error(`Anthropic API error : ${await res.text()}`);
-      const data = await res.json();
-      texte = data.content?.[0]?.text || '{}';
-console.log('MARIE RAW RESPONSE:', texte.slice(0, 1000));
-      tokensInput = data.usage?.input_tokens || 0;
-      tokensOutput = data.usage?.output_tokens || 0;
+    }
+  }
+}
 
-    } else {
-      const res = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${OPENAI_API_KEY}`
-        },
-        body: JSON.stringify({
-          model: MARIE_MODEL,
-          max_tokens: 8000,
-          response_format: { type: 'json_object' },
-          messages: [
-            { role: 'system', content: PROMPT_MARIE },
-            { role: 'user', content: rappelRegles }
-          ]
-        })
-      });
-      if (!res.ok) throw new Error(`OpenAI API error : ${await res.text()}`);
-      const data = await res.json();
-      texte = data.choices?.[0]?.message?.content || '{}';
-      tokensInput = data.usage?.prompt_tokens || 0;
-      tokensOutput = data.usage?.completion_tokens || 0;
+module.exports = async function handler(req, res) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Méthode non autorisée' });
+
+  const { periode_id } = req.body;
+  if (!periode_id) return res.status(400).json({ error: 'periode_id manquant' });
+
+  const sbHeaders = {
+    'apikey': SUPABASE_SERVICE_KEY,
+    'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+    'Content-Type': 'application/json'
+  };
+
+  async function sbGet(path) {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { headers: sbHeaders });
+    if (!r.ok) throw new Error(`Supabase ${path} : ${r.status}`);
+    return r.json();
+  }
+
+  try {
+
+    // ── 1. PÉRIODE ───────────────────────────────────────────────────────
+    const periodes = await sbGet(
+      `maternelle_periodes?id=eq.${periode_id}&select=id,numero,date_debut,date_fin`
+    );
+    if (!periodes.length) return res.status(404).json({ error: 'Période introuvable' });
+    const periode = periodes[0];
+
+    // ── 2. SEMAINES S1→S6 (S7 exclue) ───────────────────────────────────
+    const semaines = await sbGet(
+      `maternelle_semaines?periode_id=eq.${periode_id}&numero_semaine=lt.7&select=id,numero_semaine,date_lundi,a_mardi&order=numero_semaine.asc`
+    );
+
+    // ── 3. CRÉNEAUX ATELIERS — R1 uniquement ─────────────────────────────
+    const semaineIds = semaines.map(s => s.id).join(',');
+    const creneauxAteliers = await sbGet(
+      `maternelle_creneaux?semaine_id=in.(${semaineIds})` +
+      `&moment=eq.Ateliers rotation 1` +
+      `&statut_planification=eq.actif` +
+      `&select=id,semaine_id,jour,moment,role,niveau,regle_id,activite,statut,statut_planification` +
+      `&order=jour.asc,moment.asc`
+    );
+
+    // ── 4. PROGRESSION ───────────────────────────────────────────────────
+    const creneauxProgression = await sbGet(
+      `maternelle_creneaux?semaine_id=in.(${semaineIds})` +
+      `&regle_id=not.is.null` +
+      `&statut=neq.a_faire` +
+      `&select=regle_id,statut,niveau` +
+      `&order=regle_id.asc`
+    );
+
+    const regles = await sbGet(
+      `maternelle_regles?periode=eq.${periode.numero}` +
+      `&exclu_marie=eq.false` +
+      `&select=id,source,niveau,sequence_id,ordre_sequence,description,type_dispositif,est_introduction` +
+      `&order=sequence_id.asc,ordre_sequence.asc`
+    );
+
+    const progressionMap = {};
+    const repousseeMap = {};
+    for (const cr of creneauxProgression) {
+      if (!cr.regle_id) continue;
+      const regle = regles.find(r => r.id === cr.regle_id);
+      if (!regle) continue;
+      const key = `${regle.source}__${regle.niveau}`;
+      const existing = progressionMap[key];
+      if (!existing || regle.ordre_sequence > existing.ordre_sequence) {
+        progressionMap[key] = { ...regle, statut_derniere: cr.statut };
+      }
+      if (cr.statut === 'non_fait') {
+        repousseeMap[cr.regle_id] = (repousseeMap[cr.regle_id] || 0) + 1;
+      }
     }
 
-    // ── 9. PARSE JSON MARIE ───────────────────────────────────────────────
-    let plan;
+    const progression = Object.values(progressionMap).map(r => ({
+      regle_id: r.id,
+      source: r.source,
+      niveau: r.niveau,
+      sequence_id: r.sequence_id,
+      ordre_sequence: r.ordre_sequence,
+      description: r.description,
+      type_dispositif: r.type_dispositif,
+      statut_derniere: r.statut_derniere,
+      nb_fois_repoussee: repousseeMap[r.id] || 0,
+      badges: r.est_introduction ? ['INTRODUCTION'] : []
+    }));
+
+    // ── 5. PROCHAINES RÈGLES — fenêtre de 5 par source+niveau ────────────
+    const prochainesRegles = [];
+    const sourceNiveaux = [...new Set(regles.map(r => `${r.source}__${r.niveau}`))];
+    for (const key of sourceNiveaux) {
+      const [source, niveau] = key.split('__');
+      const derniere = progressionMap[key];
+      const ordreMin = derniere ? derniere.ordre_sequence : 0;
+      const suivantes = regles
+        .filter(r => r.source === source && r.niveau === niveau && r.ordre_sequence > ordreMin)
+        .slice(0, 5);
+      for (const r of suivantes) {
+        prochainesRegles.push({
+          regle_id: r.id,
+          source: r.source,
+          niveau: r.niveau,
+          sequence_id: r.sequence_id,
+          ordre_sequence: r.ordre_sequence,
+          description: r.description,
+          type_dispositif: r.type_dispositif,
+          badges: r.est_introduction ? ['INTRODUCTION'] : [],
+          nb_fois_repoussee: repousseeMap[r.id] || 0
+        });
+      }
+    }
+
+    // ── 6. LIENS INTER-MÉTHODES ───────────────────────────────────────────
+    let liensInterMethodes = [];
     try {
-      const clean = texte.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
-      plan = JSON.parse(clean);
-    } catch (e) {
-      throw new Error(`Réponse Marie non parseable : ${texte.slice(0, 300)}`);
+      liensInterMethodes = await sbGet(
+        `maternelle_liens_methodes?select=regle_source_id,regle_cible_id,delta_positions,note`
+      );
+    } catch {
+      // Table pas encore créée — on continue avec []
     }
 
-    // ── 10. SAUVEGARDE DU PLAN ────────────────────────────────────────────
+    // ── 7. DÉCOUPAGE EN 2 BLOCS ───────────────────────────────────────────
+    const bloc1 = semaines.filter(s => s.numero_semaine <= 3); // S1-S2-S3
+    const bloc2 = semaines.filter(s => s.numero_semaine >= 4); // S4-S5-S6
+
+    // ── 8. APPEL 1 — S1-S2-S3 ────────────────────────────────────────────
+    const prompt1 = buildPrompt(periode, bloc1, creneauxAteliers, progression, prochainesRegles, liensInterMethodes, 'S1, S2 et S3');
+    const { texte: texte1, tokensInput: ti1, tokensOutput: to1 } = await appelMarie(prompt1, 8000);
+
+    let plan1;
+    try {
+      plan1 = parseMarieJson(texte1);
+    } catch (e) {
+      throw new Error(`Réponse Marie bloc S1-S3 non parseable : ${texte1.slice(0, 300)}`);
+    }
+
+    // Mise à jour progression + prochaines_regles avant le 2ème appel
+    mettreAJourProgression(plan1, progression, prochainesRegles, regles);
+
+    // ── 9. APPEL 2 — S4-S5-S6 ────────────────────────────────────────────
+    const prompt2 = buildPrompt(periode, bloc2, creneauxAteliers, progression, prochainesRegles, liensInterMethodes, 'S4, S5 et S6');
+    const { texte: texte2, tokensInput: ti2, tokensOutput: to2 } = await appelMarie(prompt2, 8000);
+
+    let plan2;
+    try {
+      plan2 = parseMarieJson(texte2);
+    } catch (e) {
+      throw new Error(`Réponse Marie bloc S4-S6 non parseable : ${texte2.slice(0, 300)}`);
+    }
+
+    // ── 10. FUSION DES DEUX PLANS ─────────────────────────────────────────
+    const plan = {
+      semaines: [
+        ...(plan1.semaines || []),
+        ...(plan2.semaines || [])
+      ]
+    };
+
+    const tokensInput = ti1 + ti2;
+    const tokensOutput = to1 + to2;
+
+    // ── 11. SAUVEGARDE ────────────────────────────────────────────────────
     await fetch(`${SUPABASE_URL}/rest/v1/maternelle_plans_marie`, {
       method: 'POST',
-            headers: { ...sbHeaders, 'Prefer': 'return=minimal' },
+      headers: { ...sbHeaders, 'Prefer': 'return=minimal' },
       body: JSON.stringify({
         user_id: USER_ID,
         periode_id: periode_id,
@@ -455,8 +559,8 @@ console.log('MARIE RAW RESPONSE:', texte.slice(0, 1000));
       })
     });
 
-    // ── 11. RETOUR ────────────────────────────────────────────────────────
-        return res.status(200).json({ ok: true, plan, _debug_raw: texte.slice(0, 2000) });
+    // ── 12. RETOUR ────────────────────────────────────────────────────────
+    return res.status(200).json({ ok: true, plan });
 
   } catch (err) {
     console.error('api/marie-ateliers.js error:', err);

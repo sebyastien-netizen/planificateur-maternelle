@@ -850,7 +850,7 @@
   // ── Tiroir PDF ──
   function ouvrirTiroir(url, page, titre) {
     document.getElementById('pdf-tiroir-titre').textContent = titre;
-    document.getElementById('pdf-iframe').src = url + '#page=' + page;
+   document.getElementById('pdf-iframe').src = url + '#page=' + (page + 1);
     document.getElementById('pdf-tiroir').classList.add('ouvert');
     document.getElementById('pdf-fond').classList.add('actif');
   }

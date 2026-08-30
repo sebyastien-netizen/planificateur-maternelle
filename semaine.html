@@ -959,7 +959,7 @@ async function ouvrirHistoriqueMarie() {
   histEtat.cahierIndex = indexSemaineActive;
   histEtat.marieIndex = indexSemaineActive;
   await chargerListePlans();
-  renderHistCahier();
+  await renderHistCahier();
 }
 
 function fermerHistoriqueMarie() {
@@ -1024,19 +1024,22 @@ async function supprimerPlanHistorique() {
 
 function histNavSemaine(delta, panneau) {
   if (panneau === 'cahier') {
-    histEtat.cahierIndex = Math.max(0, Math.min(semainesDePeriode.length - 1, histEtat.cahierIndex + delta));
-    renderHistCahier();
+  histEtat.cahierIndex = Math.max(0, Math.min(semainesDePeriode.length - 1, histEtat.cahierIndex + delta));
+    await renderHistCahier();
   } else {
     histEtat.marieIndex = Math.max(0, Math.min(semainesDePeriode.length - 1, histEtat.marieIndex + delta));
     renderHistMarie();
   }
 }
 
-function renderHistCahier() {
+async function renderHistCahier() {
   const sem = semainesDePeriode[histEtat.cahierIndex];
   if (!sem) return;
   document.getElementById('hist-cahier-label').textContent = `S${sem.numero_semaine}`;
-  const creneaux = (sem.creneaux || []).filter(c =>
+  document.getElementById('hist-cahier-body').innerHTML = '<div style="color:#aaa;font-size:0.8rem;padding:1rem;text-align:center">Chargement…</div>';
+  const res = await fetch(`/api/semaine?id=${sem.id}`);
+  const data = await res.json();
+  const creneaux = (data.creneaux || []).filter(c =>
     c.moment === 'Ateliers rotation 1' || c.moment === 'Ateliers rotation 2'
   );
   const jours = ['mardi', 'jeudi', 'vendredi'];

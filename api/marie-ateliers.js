@@ -7,6 +7,8 @@
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
+const MARIE_MODEL = process.env.MARIE_MODEL || 'gpt-4o';
 const USER_ID = '6c1b1768-457b-4777-b1d9-a309f2fe2cef';
 
 const PROMPT_MARIE = `# PROMPT SYSTÈME — Marie, moteur de proposition ateliers
@@ -380,30 +382,54 @@ RAPPEL IMPÉRATIF — vérifie chaque point avant d'écrire ta réponse :
 Voici les données à analyser :
 ${JSON.stringify(contexte)}`;
 
-    const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENAI_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o',
-        max_tokens: 8000,
-        response_format: { type: 'json_object' },
-        messages: [
-          { role: 'system', content: PROMPT_MARIE },
-          { role: 'user', content: rappelRegles }
-        ]
-      })
-    });
+    // ── 8. APPEL API — switch provider selon MARIE_MODEL ─────────────────
+    const isAnthropic = MARIE_MODEL.startsWith('claude');
+    let texte, tokensInput, tokensOutput;
 
-    if (!openaiRes.ok) {
-      const err = await openaiRes.text();
-      throw new Error(`OpenAI API error : ${err}`);
+    if (isAnthropic) {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': ANTHROPIC_API_KEY,
+          'anthropic-version': '2023-06-01'
+        },
+        body: JSON.stringify({
+          model: MARIE_MODEL,
+          max_tokens: 8000,
+          system: PROMPT_MARIE,
+          messages: [{ role: 'user', content: rappelRegles }]
+        })
+      });
+      if (!res.ok) throw new Error(`Anthropic API error : ${await res.text()}`);
+      const data = await res.json();
+      texte = data.content?.[0]?.text || '{}';
+      tokensInput = data.usage?.input_tokens || 0;
+      tokensOutput = data.usage?.output_tokens || 0;
+
+    } else {
+      const res = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${OPENAI_API_KEY}`
+        },
+        body: JSON.stringify({
+          model: MARIE_MODEL,
+          max_tokens: 8000,
+          response_format: { type: 'json_object' },
+          messages: [
+            { role: 'system', content: PROMPT_MARIE },
+            { role: 'user', content: rappelRegles }
+          ]
+        })
+      });
+      if (!res.ok) throw new Error(`OpenAI API error : ${await res.text()}`);
+      const data = await res.json();
+      texte = data.choices?.[0]?.message?.content || '{}';
+      tokensInput = data.usage?.prompt_tokens || 0;
+      tokensOutput = data.usage?.completion_tokens || 0;
     }
-
-    const openaiData = await openaiRes.json();
-    const texte = openaiData.choices?.[0]?.message?.content || '{}';
 
     // ── 9. PARSE JSON MARIE ───────────────────────────────────────────────
     let plan;
@@ -415,19 +441,13 @@ ${JSON.stringify(contexte)}`;
     }
 
     // ── 10. SAUVEGARDE DU PLAN ────────────────────────────────────────────
-    const tokensInput = openaiData.usage?.prompt_tokens || 0;
-    const tokensOutput = openaiData.usage?.completion_tokens || 0;
-
     await fetch(`${SUPABASE_URL}/rest/v1/maternelle_plans_marie`, {
       method: 'POST',
-      headers: {
-        ...headers,
-        'Prefer': 'return=minimal'
-      },
+      headers: { ...headers, 'Prefer': 'return=minimal' },
       body: JSON.stringify({
         user_id: USER_ID,
         periode_id: periode_id,
-        modele: 'gpt-4o',
+        modele: MARIE_MODEL,
         plan_json: plan,
         tokens_input: tokensInput,
         tokens_output: tokensOutput

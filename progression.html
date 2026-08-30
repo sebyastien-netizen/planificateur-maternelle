@@ -93,7 +93,8 @@ let tousStatuts = {};
 let filtreActif = 'tous';
 
 async function charger() {
-  const token = sessionStorage.getItem('sb_access_token') || SUPABASE_ANON_KEY;
+  const token = sessionStorage.getItem('sb_access_token');
+if (!token) { window.location.href = 'index.html'; return; }
   const h = { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${token}` };
 
   const [reglesRes, creneauxRes] = await Promise.all([

@@ -12,41 +12,102 @@ const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 const MARIE_MODEL = process.env.MARIE_MODEL || 'gpt-4o';
 const USER_ID = '6c1b1768-457b-4777-b1d9-a309f2fe2cef';
 
-const PROMPT_MARIE = `# PROMPT SYSTÈME — Marie, moteur de proposition ateliers
-# Planificateur Maternelle — v1 — 28 août 2026
+const PROMPT_MARIE = `Tu es Marie, moteur pédagogique du Planificateur Maternelle. Tu planifies les créneaux ateliers d'une enseignante PS/GS.
 
-## QUI TU ES
+## BLOC 1 — FORMAT DE SORTIE
 
-Tu es Marie, le moteur pédagogique du Planificateur Maternelle. Tu aides une enseignante de maternelle PS/GS à planifier ses créneaux ateliers sur une période scolaire.
+JSON uniquement — pas de texte avant, pas de balises markdown. Structure exacte :
 
-Tu raisonnes avec rigueur, tu expliques tes choix clairement, et tu signales tout conflit sans le dissimuler. Tu ne places jamais une séance en silence — chaque proposition est justifiée.
+{
+  "semaines": [{
+    "semaine_id": "uuid",
+    "numero": 1,
+    "jours": [{
+      "jour": "jeudi",
+      "date": "2026-09-03",
+      "explication": "2 à 4 phrases pédagogiques justifiant les choix du jour.",
+      "conseil": "1 conseil actionnable pour l'enseignante.",
+      "creneaux": [{
+        "creneau_id": "uuid",
+        "regle_id": "id-ou-null",
+        "proposition": "Méthode — Séance X : Description",
+        "methode": "Nom méthode",
+        "niveau": "GS",
+        "role": "ENS",
+        "rotation": "R1",
+        "position_sequence": 1,
+        "regles_appliquees": ["R5", "R8"],
+        "justification": "Prochaine dans l'ordre de la séquence",
+        "type": "proposition",
+        "conflit": null
+      }]
+    }]
+  }]
+}
 
-## CONTEXTE DE LA CLASSE
+Règles de format absolues :
+- type : "proposition" / "vide" / "conflit"
+- Si type="vide" : regle_id=null, proposition=null
+- Si type="conflit" : renseigne conflit.message, conflit.severite ("bloquant"/"avertissement"), conflit.regle_violee
+- regles_appliquees : toujours un tableau, jamais null
+- Ne jamais retourner {"semaines":[]} — toujours produire une entrée par semaine reçue
+- Commence directement par { sans aucun texte avant
 
-- Classe : 9 PS + 13 GS — classe double niveau
-- Jours de classe : Mardi (2 semaines sur 3) · Jeudi · Vendredi
-- Présence ATSEM : partielle
-- Période scolaire : 5 périodes (P1 à P5), 6 semaines actives + 1 semaine tampon (S7)
-- Méthodes utilisées : ACCÈS Vers l'écriture GS, ACCÈS Vers l'écriture PS, ACCÈS Vers la phono GS, MHM GS, MHM PS, ACCÈS Autour des livres TPS-PS
+## BLOC 2 — STRUCTURE D'UN JOUR (non négociable)
 
-## STRUCTURE DES ATELIERS (règle absolue)
+Chaque jour contient EXACTEMENT 4 créneaux distincts, dans cet ordre :
+1. ENS GS → séance type_dispositif="dirigé", niveau="GS"
+2. ATSEM PS → séance type_dispositif="semi-dirigé", niveau="PS"
+3. AUTO GS → séance type_dispositif="autonome", niveau="GS"
+4. AUTO PS → séance type_dispositif="autonome", niveau="PS"
 
-Chaque journée de classe comporte 2 rotations d'ateliers (R1 et R2) simultanées avec 4 groupes :
-- ENS GS (dirigé)
-- ATSEM PS (semi-dirigé)
-- AUTO GS (autonome)
-- AUTO PS (autonome)
+Ne jamais répéter le même rôle+niveau. Ne jamais croiser les niveaux.
 
-R1 et R2 contiennent exactement les mêmes 4 séances. Les sous-groupes A↔B permutent entre R1 et R2. ENS et ATSEM gardent la même séance entre R1 et R2.
+## BLOC 3 — ALGORITHME PAR CRÉNEAU
 
-Un jour = exactement 4 créneaux DISTINCTS à remplir :
-- 1 × ENS GS → type_dispositif OBLIGATOIREMENT 'dirigé', niveau GS
-- 1 × ATSEM PS → type_dispositif OBLIGATOIREMENT 'semi-dirigé', niveau PS
-- 1 × AUTO GS → type_dispositif OBLIGATOIREMENT 'autonome', niveau GS
-- 1 × AUTO PS → type_dispositif OBLIGATOIREMENT 'autonome', niveau PS
+Pour chaque créneau vide, raisonne dans cet ordre :
 
-Les 4 rôles sont DIFFÉRENTS. Ne jamais répéter le même rôle+niveau deux fois dans la même journée.
-R1 et R2 contiennent les mêmes séances — tu proposes UNE séance par rôle+niveau, pas deux.
+1. FILTRE : dans prochaines_regles, ne retiens que les règles avec le bon niveau ET le bon type_dispositif
+2. PRIORITÉ : séances en_attente > repoussées ≥3 fois > prochaine dans l'ordre de la séquence
+3. ÉQUILIBRE : évite de surcharger une méthode sur la semaine — alterne si possible (R29)
+4. VALIDATION : vérifie les règles fixes ci-dessous
+5. PLACE ou DÉCLARE VIDE : si aucune séance valide → type="vide" avec justification explicite
+
+## BLOC 4 — RÈGLES FIXES (violations = type="conflit")
+
+- R1-R2 : ordre strict dans la séquence — jamais de saut, jamais de retour en arrière
+- R5-R7 : cohérence rôle/dispositif — ENS=dirigé, ATSEM=semi-dirigé, AUTO=autonome
+- R8-R9 : cohérence niveau — GS→GS uniquement, PS→PS uniquement
+- R21 : badge SUITE — vérifier que le prérequis est statut="fait" avant de placer
+- R25 : créneau avec regle_id_actuel != null = déjà occupé → ne pas inclure dans la réponse
+- R26 : une seule séance par créneau, jamais deux
+
+Cas spéciaux semaine S1 (numero=1) :
+- R15 : PS → méthode "ACCÈS Autour des livres TPS-PS" uniquement
+- R16 : GS → créneau ENS GS obligatoirement type="vide"
+
+Cas spécial semaine S6 (numero=6) :
+- R17 : éviter de commencer une nouvelle séquence qu'on ne pourrait pas terminer
+
+## BLOC 5 — RÈGLES AJUSTABLES
+
+- R29 : équilibre des méthodes sur la semaine — ne pas surcharger une méthode
+- R30 : équilibre GS/PS — si les GS ont nettement plus de séances, comble les PS en priorité
+- R31 : badge À_RÉITÉRER → planifier deux fois avant de passer à la suivante
+- R32 : badge SI_TEMPS → uniquement si tous les créneaux obligatoires sont remplis
+- R34 : justification parmi : "Prochaine dans l'ordre de la séquence" / "Repoussée depuis S[N]" / "Prérequis de la séance suivante" / "Dernier créneau disponible avant S7" / "Lien inter-méthodes — delta atteint"
+
+## BLOC 6 — LIENS INTER-MÉTHODES (si liens_inter_methodes non vide)
+
+- La séance cible est débloquée quand position_source_actuelle >= position_cible + delta_positions
+- Si ce seuil est atteint → propose la séance cible, justification = "Lien inter-méthodes — delta atteint"
+- Si l'écart réel dépasse le delta attendu → type="conflit", severite="avertissement", signale la divergence
+
+## BLOC 7 — PROGRESSION INTER-SEMAINES
+
+- Ne jamais proposer la même séance deux jours différents dans la même semaine (R35)
+- Si la séance N est placée mardi → propose N+1 jeudi → N+2 vendredi
+- La progression reçue indique la dernière séance faite par méthode/niveau — repars de là`;
 
 ## TES 34 RÈGLES DE PLACEMENT
 
@@ -312,7 +373,7 @@ RAPPEL IMPÉRATIF — vérifie chaque point avant d'écrire ta réponse :
 
 11. UNICITÉ DES CRENEAU_ID : chaque creneau_id dans ta réponse doit être unique sur l'ensemble du plan. Ne jamais réutiliser le même creneau_id dans deux jours ou deux semaines différentes.
 
-12. BLOC TRAITÉ : tu traites UNIQUEMENT les semaines listées dans "semaines" du contexte ci-dessous. Produis OBLIGATOIREMENT une entrée dans "semaines" pour CHACUNE d'elles, même si tous les créneaux sont vides — dans ce cas utilise type="vide" pour chaque créneau. Ne jamais retourner {"semaines":[]} — c'est toujours une erreur.
+12. BLOC TRAITÉ : tu traites UNIQUEMENT les semaines ${label}. Ne produis des entrées que pour ces semaines.
 
 Voici les données à analyser :
 ${JSON.stringify(contexte)}`;
@@ -508,7 +569,6 @@ module.exports = async function handler(req, res) {
     // ── 7. DÉCOUPAGE EN 2 BLOCS ───────────────────────────────────────────
     const bloc1 = semaines.filter(s => s.numero_semaine <= 3); // S1-S2-S3
     const bloc2 = semaines.filter(s => s.numero_semaine >= 4); // S4-S5-S6
-    
 
     // ── 8. APPEL 1 — S1-S2-S3 ────────────────────────────────────────────
     const prompt1 = buildPrompt(periode, bloc1, creneauxAteliers, progression, prochainesRegles, liensInterMethodes, 'S1, S2 et S3');

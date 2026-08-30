@@ -165,7 +165,7 @@ async function appelMarie(promptUser, tokensMax) {
 
 // ── Parse JSON Marie avec nettoyage markdown ──────────────────────────
 function parseMarieJson(texte) {
-  const clean = texte.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
+  const clean = texte.replace(/^\s*```json\s*/i, '').replace(/\s*```\s*$/i, '').trim();
   return JSON.parse(clean);
 }
 

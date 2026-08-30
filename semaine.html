@@ -1247,7 +1247,7 @@ function construireVue(momentMap, ordre, jours, tousCreneaux, periode) {
         if (cs.length > 0) {
           const contenu = renderGroupe(cs, estRituel, jour, moment, heureDebut, heureFin);
           const momentSafe = moment.replace(/'/g, "\\'");
-          const btnAjouter = estAtelier ? `<div style="font-size:0.7rem;color:#2d6a4f;cursor:pointer;padding:4px 8px;text-align:center;border-top:1px dashed #a8d5b5;margin-top:4px" onclick="ouvrirMenuContextuel(event, null, '${jour}', '${momentSafe}', null, '${heureDebut}', '${heureFin}', false)"><i class="ti ti-plus" style="font-size:11px" aria-hidden="true"></i> Ajouter</div>` : '';
+          const btnAjouter = estAtelier ? `<div style="font-size:0.7rem;color:#2d6a4f;cursor:pointer;padding:4px 8px;text-align:center;border-top:1px dashed #a8d5b5;margin-top:4px" onclick="choisirNiveauPuisAjouter(event, '${jour}', '${momentSafe}', '${heureDebut}', '${heureFin}')"><i class="ti ti-plus" style="font-size:11px" aria-hidden="true"></i> Ajouter</div>` : '';
           html += `<div class="cellule${classeExtra}">${contenu}${btnAjouter}</div>`;
         } else if (estRituel) {
           // Cellule rituel vide — cliquable pour ajouter
@@ -2808,6 +2808,12 @@ document.getElementById('btn-historique').addEventListener('click', ouvrirHistor
 
 let choisirEtat = { creneauId: null, role: null, niveau: null, jour: null };
 
+  function choisirNiveauPuisAjouter(event, jour, moment, heureDebut, heureFin) {
+  event.stopPropagation();
+  const niveau = confirm('Cliquez OK pour GS, Annuler pour PS') ? 'GS' : 'PS';
+  const role = niveau === 'GS' ? 'AUTO' : 'AUTO';
+  ouvrirChoisirSeance(null, role, niveau, jour);
+}
 async function ouvrirChoisirSeance(creneauId, role, niveau, jour) {
   choisirEtat = { creneauId, role, niveau, jour };
 

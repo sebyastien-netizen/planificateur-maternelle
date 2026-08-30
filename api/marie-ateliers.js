@@ -460,6 +460,7 @@ for (const r of toutesLesRegles) {
 
     // ── 8. APPEL 1 — S1-S2-S3 ────────────────────────────────────────────
     const prompt1 = buildPrompt(periode, bloc1, creneauxAteliers, progression, prochainesRegles, liensInterMethodes, 'S1, S2 et S3');
+    const { texte: texte1, tokensInput: ti1, tokensOutput: to1 } = await appelMarie(prompt1, 8000);
 
     let plan1;
     try {

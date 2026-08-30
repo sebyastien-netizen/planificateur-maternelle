@@ -2602,7 +2602,8 @@ function renderOrgDetail() {
     // Justification / conflit
     let infoHtml = '';
     if (c.type === 'proposition' && c.justification) {
-      infoHtml = `<div class="org-regle-pill">📋 ${c.regles_appliquees.join(' · ')} — ${c.justification}</div>`;
+            const regles = Array.isArray(c.regles_appliquees) ? c.regles_appliquees : [];
+      infoHtml = `<div class="org-regle-pill">📋 ${regles.length ? regles.join(' · ') + ' — ' : ''}${c.justification || ''}</div>`;
     } else if (c.type === 'conflit' && c.conflit) {
       infoHtml = `<div class="org-conflit-msg">⚠ ${c.conflit.message}</div>`;
     } else if (c.type === 'vide') {
@@ -2636,7 +2637,7 @@ function renderOrgDetail() {
 
     // Justification pour bouton (i)
     const justifTooltip = c.type === 'proposition'
-      ? `Règles : ${c.regles_appliquees.join(', ')}\\n${c.justification}`
+            ? `Règles : ${Array.isArray(c.regles_appliquees) ? c.regles_appliquees.join(', ') : '—'}\\n${c.justification || ''}`
       : c.type === 'conflit'
         ? `Règle violée : ${c.conflit?.regle_violee}\\n${c.conflit?.message}`
         : c.justification || '';

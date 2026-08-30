@@ -461,7 +461,13 @@ for (const r of toutesLesRegles) {
     // ── 8. APPEL 1 — S1-S2-S3 ────────────────────────────────────────────
     const prompt1 = buildPrompt(periode, bloc1, creneauxAteliers, progression, prochainesRegles, liensInterMethodes, 'S1, S2 et S3');
     const { texte: texte1, tokensInput: ti1, tokensOutput: to1 } = await appelMarie(prompt1, 8000);
-    return res.status(200).json({ _debug: true, texte1_raw: texte1.slice(0, 3000) });
+    if (texte1 === '{}' || texte1.trim() === '{}') {
+  return res.status(200).json({ 
+    _debug: true, 
+    texte1_raw: texte1,
+    prompt1_fin: prompt1.slice(-500)
+  });
+}
 
     let plan1;
     try {

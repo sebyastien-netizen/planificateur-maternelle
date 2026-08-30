@@ -443,7 +443,7 @@ ${JSON.stringify(contexte)}`;
     // ── 10. SAUVEGARDE DU PLAN ────────────────────────────────────────────
     await fetch(`${SUPABASE_URL}/rest/v1/maternelle_plans_marie`, {
       method: 'POST',
-      headers: { ...headers, 'Prefer': 'return=minimal' },
+            headers: { ...sbHeaders, 'Prefer': 'return=minimal' },
       body: JSON.stringify({
         user_id: USER_ID,
         periode_id: periode_id,

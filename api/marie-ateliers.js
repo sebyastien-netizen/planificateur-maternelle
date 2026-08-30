@@ -437,7 +437,7 @@ module.exports = async function handler(req, res) {
 
     // ── 8. APPEL 1 — S1-S2-S3 ────────────────────────────────────────────
     const prompt1 = buildPrompt(periode, bloc1, creneauxAteliers, progression, prochainesRegles, liensInterMethodes, 'S1, S2 et S3');
-    const { texte: texte1, tokensInput: ti1, tokensOutput: to1 } = await appelMarie(prompt1, 8000);
+    const { texte: texte1, tokensInput: ti1, tokensOutput: to1 } = await appelMarie(prompt1, 60000);
 
     let plan1;
     try {
@@ -451,7 +451,7 @@ module.exports = async function handler(req, res) {
 
     // ── 9. APPEL 2 — S4-S5-S6 ────────────────────────────────────────────
     const prompt2 = buildPrompt(periode, bloc2, creneauxAteliers, progression, prochainesRegles, liensInterMethodes, 'S4, S5 et S6');
-    const { texte: texte2, tokensInput: ti2, tokensOutput: to2 } = await appelMarie(prompt2, 8000);
+    const { texte: texte2, tokensInput: ti2, tokensOutput: to2 } = await appelMarie(prompt2, 50000);
 
     let plan2;
     try {

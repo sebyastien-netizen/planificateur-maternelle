@@ -414,9 +414,21 @@ module.exports = async function handler(req, res) {
       const [source, niveau] = key.split('__');
       const derniere = progressionMap[key];
       const ordreMin = derniere ? derniere.ordre_sequence : 0;
-      const suivantes = regles
-        .filter(r => r.source === source && r.niveau === niveau && r.ordre_sequence > ordreMin)
-        .slice(0, 5);
+const toutesLesRegles = regles
+  .filter(r => r.source === source && r.niveau === niveau && r.ordre_sequence > ordreMin);
+
+// Au moins 1 par type_dispositif, jusqu'à 5 au total
+const dispositifs = ['dirigé', 'semi-dirigé', 'autonome'];
+const suivantes = [];
+for (const disp of dispositifs) {
+  const premiere = toutesLesRegles.find(r => r.type_dispositif === disp && !suivantes.includes(r));
+  if (premiere) suivantes.push(premiere);
+}
+// Compléter jusqu'à 5 avec les suivantes dans l'ordre
+for (const r of toutesLesRegles) {
+  if (suivantes.length >= 5) break;
+  if (!suivantes.includes(r)) suivantes.push(r);
+}
       for (const r of suivantes) {
         prochainesRegles.push({
           regle_id: r.id,

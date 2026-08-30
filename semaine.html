@@ -1022,7 +1022,7 @@ async function supprimerPlanHistorique() {
   await chargerListePlans();
 }
 
-function histNavSemaine(delta, panneau) {
+async function histNavSemaine(delta, panneau) {
   if (panneau === 'cahier') {
   histEtat.cahierIndex = Math.max(0, Math.min(semainesDePeriode.length - 1, histEtat.cahierIndex + delta));
     await renderHistCahier();

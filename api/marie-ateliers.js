@@ -404,6 +404,7 @@ ${JSON.stringify(contexte)}`;
       if (!res.ok) throw new Error(`Anthropic API error : ${await res.text()}`);
       const data = await res.json();
       texte = data.content?.[0]?.text || '{}';
+console.log('MARIE RAW RESPONSE:', texte.slice(0, 1000));
       tokensInput = data.usage?.input_tokens || 0;
       tokensOutput = data.usage?.output_tokens || 0;
 

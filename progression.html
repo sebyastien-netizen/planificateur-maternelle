@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Progression des méthodes — Planificateur Maternelle</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: #f5f5f0; padding: 1.5rem; color: #1a1a1a; }
+
+    .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
+    .page-header h1 { font-size: 1.1rem; font-weight: 500; color: #2d6a4f; }
+    .page-header p { font-size: 0.8rem; color: #888; margin-top: 2px; }
+    .btn-retour { font-size: 0.85rem; color: #2d6a4f; text-decoration: none; border: 1px solid #2d6a4f; padding: 6px 14px; border-radius: 8px; }
+
+    .filtres { display: flex; gap: 8px; margin-bottom: 1.25rem; }
+    .filtre-btn { padding: 6px 16px; font-size: 0.8rem; border: 1px solid #ddd; border-radius: 20px; cursor: pointer; background: white; color: #666; }
+    .filtre-btn.actif { background: #e8f4ee; color: #2d6a4f; border-color: #2d6a4f; font-weight: 500; }
+
+    .colonnes { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 1rem; align-items: flex-start; }
+
+    .col { background: white; border-radius: 10px; border: 1px solid #e5e5e0; min-width: 220px; max-width: 240px; flex-shrink: 0; overflow: hidden; }
+    .col-header { padding: 12px 14px; border-bottom: 1px solid #f0f0ee; }
+    .col-titre { font-size: 0.85rem; font-weight: 600; color: #1a1a1a; }
+    .col-sous { font-size: 0.7rem; color: #aaa; margin-top: 1px; }
+    .col-compteur { font-size: 0.7rem; color: #666; margin-top: 6px; }
+    .col-progress { height: 4px; background: #f0f0ee; border-radius: 2px; margin-top: 6px; }
+    .col-progress-fill { height: 100%; background: #2d6a4f; border-radius: 2px; transition: width 0.3s; }
+
+    .col-body { padding: 10px 0; max-height: 70vh; overflow-y: auto; }
+
+    .seq-label { font-size: 0.65rem; font-weight: 700; color: #aaa; text-transform: uppercase; letter-spacing: 0.05em; padding: 8px 14px 4px; }
+
+    .seance { display: flex; align-items: flex-start; gap: 8px; padding: 6px 14px; cursor: default; }
+    .seance-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+    .seance-dot.fait { background: #2d6a4f; }
+    .seance-dot.a_faire { background: #e5e5e0; }
+    .seance-dot.en_attente { background: #e67e22; }
+    .seance-dot.non_fait { background: #c0392b; }
+
+    .seance-texte { flex: 1; }
+    .seance-desc { font-size: 0.75rem; color: #333; line-height: 1.3; }
+    .seance-desc.fait { color: #2d6a4f; }
+    .seance-desc.non_fait { color: #c0392b; }
+    .seance-desc.en_attente { color: #e67e22; }
+    .seance-meta { font-size: 0.65rem; color: #aaa; margin-top: 2px; }
+    .seance-pos { font-size: 0.65rem; color: #bbb; }
+
+    .col[data-niveau="GS"] .col-header { border-top: 3px solid #1e40af; }
+    .col[data-niveau="PS"] .col-header { border-top: 3px solid #856404; }
+  </style>
+</head>
+<body>
+
+<div class="page-header">
+  <div>
+    <h1>📊 Progression des méthodes</h1>
+    <p id="sous-titre">Chargement…</p>
+  </div>
+  <a class="btn-retour" id="btn-retour" href="#">← Retour</a>
+</div>
+
+<div class="filtres">
+  <button class="filtre-btn actif" onclick="filtrer('tous')">Toutes</button>
+  <button class="filtre-btn" onclick="filtrer('GS')">GS uniquement</button>
+  <button class="filtre-btn" onclick="filtrer('PS')">PS uniquement</button>
+</div>
+
+<div class="colonnes" id="colonnes">
+  <div style="padding:2rem;color:#888;font-size:0.82rem">Chargement…</div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://wqsprjlocuhandhvpytx.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indxc3ByamxvY3VoYW5kaHZweXR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjQzMzYyMTYsImV4cCI6MjAzOTkxMjIxNn0.p8bvBs1HCLaZHiMeJaJly4_yBBNxBd2rBcvfNKBq8-I';
+
+const params = new URLSearchParams(window.location.search);
+const semaineId = params.get('id');
+
+document.getElementById('btn-retour').href = `semaine.html?id=${semaineId}`;
+
+const sourcesMeta = {
+  'ACCÈS Vers l\'écriture GS': { label: 'Vers l\'écriture GS', sous: 'ACCÈS · GS', niveau: 'GS' },
+  'ACCÈS Vers l\'écriture PS': { label: 'Vers l\'écriture PS', sous: 'ACCÈS · PS', niveau: 'PS' },
+  'ACCÈS Autour des livres TPS-PS': { label: 'Autour des livres', sous: 'ACCÈS · PS', niveau: 'PS' },
+  'ACCÈS Vers la phono GS': { label: 'Vers la phono GS', sous: 'ACCÈS · GS', niveau: 'GS' },
+  'MHM MS/GS': { label: 'MHM GS', sous: 'Maths · GS', niveau: 'GS' },
+  'MHM PS/MS': { label: 'MHM PS', sous: 'Maths · PS', niveau: 'PS' }
+};
+
+let toutesRegles = [];
+let tousStatuts = {};
+let filtreActif = 'tous';
+
+async function charger() {
+  const token = sessionStorage.getItem('sb_access_token') || SUPABASE_ANON_KEY;
+  const h = { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${token}` };
+
+  const [reglesRes, creneauxRes] = await Promise.all([
+    fetch(`${SUPABASE_URL}/rest/v1/maternelle_regles?exclu_marie=eq.false&select=id,source,niveau,sequence_id,ordre_sequence,description,type_dispositif&order=source.asc,ordre_sequence.asc`, { headers: h }),
+    fetch(`${SUPABASE_URL}/rest/v1/maternelle_creneaux?regle_id=not.is.null&select=regle_id,statut,statut_planification`, { headers: h })
+  ]);
+
+  toutesRegles = await reglesRes.json();
+  const creneaux = await creneauxRes.json();
+
+  for (const c of creneaux) {
+    if (!c.regle_id) continue;
+    if (!tousStatuts[c.regle_id] || c.statut === 'fait') {
+      tousStatuts[c.regle_id] = { statut: c.statut, statut_planification: c.statut_planification };
+    }
+  }
+
+  document.getElementById('sous-titre').textContent = `${toutesRegles.length} séances · toutes méthodes`;
+  render();
+}
+
+function filtrer(niveau) {
+  filtreActif = niveau;
+  document.querySelectorAll('.filtre-btn').forEach(b => b.classList.remove('actif'));
+  event.target.classList.add('actif');
+  render();
+}
+
+function render() {
+  const sources = [...new Set(toutesRegles.map(r => r.source))];
+  let html = '';
+
+  for (const source of sources) {
+    const meta = sourcesMeta[source] || { label: source, sous: '', niveau: 'GS' };
+    if (filtreActif !== 'tous' && meta.niveau !== filtreActif) continue;
+
+    const reglesSrc = toutesRegles.filter(r => r.source === source);
+    const faites = reglesSrc.filter(r => tousStatuts[r.id]?.statut === 'fait').length;
+    const enAttente = reglesSrc.filter(r => tousStatuts[r.id]?.statut_planification === 'en_attente').length;
+    const nonFaites = reglesSrc.filter(r => tousStatuts[r.id]?.statut === 'non_fait').length;
+    const restantes = reglesSrc.length - faites;
+    const pct = reglesSrc.length ? Math.round(faites / reglesSrc.length * 100) : 0;
+
+    const sequences = [...new Set(reglesSrc.map(r => r.sequence_id))];
+    let bodyHtml = '';
+
+    for (const seqId of sequences) {
+      const seqRegles = reglesSrc.filter(r => r.sequence_id === seqId);
+      const seqLabel = seqId ? seqId.replace(/-/g, ' ').replace(/p\d+/i, '').replace(/seq\s*\d+/i, '').trim() : '—';
+      bodyHtml += `<div class="seq-label">${seqLabel}</div>`;
+
+      for (const r of seqRegles) {
+        const s = tousStatuts[r.id];
+        const statut = s?.statut_planification === 'en_attente' ? 'en_attente' : (s?.statut || 'a_faire');
+        bodyHtml += `<div class="seance">
+          <div class="seance-dot ${statut}"></div>
+          <div class="seance-texte">
+            <div class="seance-desc ${statut}">${r.description.substring(0, 70)}${r.description.length > 70 ? '…' : ''}</div>
+            <div class="seance-meta">pos. ${r.ordre_sequence} · ${r.type_dispositif || '—'}</div>
+          </div>
+        </div>`;
+      }
+    }
+
+    html += `<div class="col" data-niveau="${meta.niveau}">
+      <div class="col-header">
+        <div class="col-titre">${meta.label}</div>
+        <div class="col-sous">${meta.sous}</div>
+        <div class="col-compteur">${faites} faites · ${enAttente} en attente · ${restantes} restantes</div>
+        <div class="col-progress"><div class="col-progress-fill" style="width:${pct}%"></div></div>
+      </div>
+      <div class="col-body">${bodyHtml}</div>
+    </div>`;
+  }
+
+  document.getElementById('colonnes').innerHTML = html || '<div style="padding:2rem;color:#aaa;font-size:0.82rem">Aucune méthode pour ce filtre.</div>';
+}
+
+charger();
+</script>
+</body>
+</html>

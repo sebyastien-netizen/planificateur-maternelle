@@ -396,7 +396,7 @@ ${JSON.stringify(contexte)}`;
         },
         body: JSON.stringify({
           model: MARIE_MODEL,
-          max_tokens: 8000,
+          max_tokens: 16000,
           system: PROMPT_MARIE,
           messages: [{ role: 'user', content: rappelRegles }]
         })

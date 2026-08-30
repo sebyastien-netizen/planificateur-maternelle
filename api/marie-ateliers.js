@@ -414,7 +414,27 @@ ${JSON.stringify(contexte)}`;
       throw new Error(`Réponse Marie non parseable : ${texte.slice(0, 300)}`);
     }
 
-    // ── 10. RETOUR ────────────────────────────────────────────────────────
+    // ── 10. SAUVEGARDE DU PLAN ────────────────────────────────────────────
+    const tokensInput = openaiData.usage?.prompt_tokens || 0;
+    const tokensOutput = openaiData.usage?.completion_tokens || 0;
+
+    await fetch(`${SUPABASE_URL}/rest/v1/maternelle_plans_marie`, {
+      method: 'POST',
+      headers: {
+        ...headers,
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({
+        user_id: USER_ID,
+        periode_id: periode_id,
+        modele: 'gpt-4o',
+        plan_json: plan,
+        tokens_input: tokensInput,
+        tokens_output: tokensOutput
+      })
+    });
+
+    // ── 11. RETOUR ────────────────────────────────────────────────────────
     return res.status(200).json({ ok: true, plan });
 
   } catch (err) {

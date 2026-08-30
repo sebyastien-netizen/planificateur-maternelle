@@ -312,7 +312,7 @@ RAPPEL IMPÉRATIF — vérifie chaque point avant d'écrire ta réponse :
 
 11. UNICITÉ DES CRENEAU_ID : chaque creneau_id dans ta réponse doit être unique sur l'ensemble du plan. Ne jamais réutiliser le même creneau_id dans deux jours ou deux semaines différentes.
 
-12. BLOC TRAITÉ : tu traites UNIQUEMENT les semaines ${label}. Ne produis des entrées que pour ces semaines.
+12. BLOC TRAITÉ : tu traites UNIQUEMENT les semaines listées dans "semaines" du contexte ci-dessous. Produis OBLIGATOIREMENT une entrée dans "semaines" pour CHACUNE d'elles, même si tous les créneaux sont vides — dans ce cas utilise type="vide" pour chaque créneau. Ne jamais retourner {"semaines":[]} — c'est toujours une erreur.
 
 Voici les données à analyser :
 ${JSON.stringify(contexte)}`;
@@ -509,13 +509,7 @@ module.exports = async function handler(req, res) {
     const bloc1 = semaines.filter(s => s.numero_semaine <= 3); // S1-S2-S3
     const bloc2 = semaines.filter(s => s.numero_semaine >= 4); // S4-S5-S6
     
-return res.status(200).json({ 
-  _debug: true,
-  creneaux_r1_count: creneauxAteliers.length,
-  creneaux_r1_sample: creneauxAteliers.slice(0, 3),
-  bloc1_semaines: bloc1.map(s => s.numero_semaine),
-  prochaines_regles_count: prochainesRegles.length
-});
+
     // ── 8. APPEL 1 — S1-S2-S3 ────────────────────────────────────────────
     const prompt1 = buildPrompt(periode, bloc1, creneauxAteliers, progression, prochainesRegles, liensInterMethodes, 'S1, S2 et S3');
     const { texte: texte1, tokensInput: ti1, tokensOutput: to1 } = await appelMarie(prompt1, 8000);

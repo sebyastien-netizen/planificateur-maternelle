@@ -252,7 +252,23 @@ RAPPEL IMPÉRATIF — vérifie chaque point avant d'écrire ta réponse :
 12. BLOC TRAITÉ : tu traites UNIQUEMENT les semaines ${label}. Ne produis des entrées que pour ces semaines.
 
 Voici les données à analyser :
-${JSON.stringify(contexte)}`;
+
+PÉRIODE : P${contexte.periode.numero} (${contexte.periode.date_debut} → ${contexte.periode.date_fin})
+
+SEMAINES À TRAITER :
+${contexte.semaines.map(s => `
+S${s.numero} (lundi ${s.date_lundi}) — jours : ${s.jours.join(', ')}
+Créneaux vides à remplir :
+${s.creneaux_ateliers.filter(c => !c.regle_id_actuel && !c.activite_actuelle).map(c => `  - ${c.creneau_id} | ${c.jour} | ${c.role} ${c.niveau} | ${c.rotation}`).join('\n')}
+`).join('\n')}
+
+PROGRESSION ACTUELLE (dernière séance faite par méthode) :
+${contexte.progression.length ? contexte.progression.map(p => `  - ${p.source} ${p.niveau} : séance ordre ${p.ordre_sequence} (${p.statut_derniere})`).join('\n') : '  Aucune séance faite — début de période'}
+
+SÉANCES DISPONIBLES PAR CRÉNEAU :
+${contexte.prochaines_regles.map(r => `  - [${r.regle_id}] ${r.source} | ${r.niveau} | ${r.type_dispositif} | ordre ${r.ordre_sequence} : ${r.description}`).join('\n')}
+
+${contexte.liens_inter_methodes.length ? `LIENS INTER-MÉTHODES :\n${contexte.liens_inter_methodes.map(l => `  - ${l.regle_source_id} → ${l.regle_cible_id} (delta ${l.delta_positions}) : ${l.note}`).join('\n')}` : ''}`;
 }
 
 // ── Mise à jour de la progression après un plan partiel ──────────────

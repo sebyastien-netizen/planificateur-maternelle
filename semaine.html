@@ -343,6 +343,12 @@
       cursor: pointer; display: flex; align-items: center; gap: 6px;
     }
     .btn-organiser:hover { background: #d4edde; }
+    .btn-historique {
+  font-size: 0.85rem; color: #5a4a8a; background: #f0ecf8;
+  border: 1px solid #c4b0e0; padding: 6px 14px; border-radius: 8px;
+  cursor: pointer; display: flex; align-items: center; gap: 6px;
+}
+.btn-historique:hover { background: #e4daf0; }
 
     /* ── Superposition Organiser mes créneaux ── */
     .organiser-fond {
@@ -622,6 +628,7 @@
   <div class="header-actions">
     <button class="btn-rituels" onclick="ouvrirTiroir()">📋 Rituels de la semaine</button>
     <button class="btn-organiser" onclick="ouvrirOrganiser()">✨ Organiser mes créneaux</button>
+<button class="btn-historique" onclick="ouvrirHistoriqueMarie()">🕘 Historique requêtes Marie</button>
     <a href="accueil.html" class="btn-retour">← Retour</a>
   </div>
 </div>
@@ -942,7 +949,150 @@ async function changerPeriode() {
 function naviguerSemaine(delta) {
   allerASemaine(indexSemaineActive + delta);
 }
+// =============================================
+// HISTORIQUE REQUÊTES MARIE
+// =============================================
+let histEtat = { cahierIndex: 0, marieIndex: 0, planActuel: null, planId: null };
 
+async function ouvrirHistoriqueMarie() {
+  document.getElementById('historique-fond').classList.add('actif');
+  histEtat.cahierIndex = indexSemaineActive;
+  histEtat.marieIndex = indexSemaineActive;
+  await chargerListePlans();
+  renderHistCahier();
+}
+
+function fermerHistoriqueMarie() {
+  document.getElementById('historique-fond').classList.remove('actif');
+  histEtat = { cahierIndex: 0, marieIndex: 0, planActuel: null, planId: null };
+}
+
+async function chargerListePlans() {
+  const token = sessionStorage.getItem('sb_access_token') || SUPABASE_ANON_KEY;
+  const periodeId = document.getElementById('select-periode').value;
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/maternelle_plans_marie?periode_id=eq.${periodeId}&select=id,created_at,modele,tokens_input,tokens_output&order=created_at.desc`,
+    { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${token}` } }
+  );
+  const plans = await res.json();
+  const select = document.getElementById('hist-select-plan');
+  select.innerHTML = '<option value="">— choisir une requête —</option>';
+  plans.forEach(p => {
+    const date = new Date(p.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+    const opt = document.createElement('option');
+    opt.value = p.id;
+    opt.textContent = `${date} — ${p.modele} · ${(p.tokens_input || 0) + (p.tokens_output || 0)} tokens`;
+    select.appendChild(opt);
+  });
+}
+
+async function chargerPlanHistorique() {
+  const select = document.getElementById('hist-select-plan');
+  const id = select.value;
+  document.getElementById('hist-btn-supprimer').style.display = id ? 'block' : 'none';
+  if (!id) {
+    histEtat.planActuel = null;
+    histEtat.planId = null;
+    document.getElementById('hist-marie-body').innerHTML = '<div style="color:#aaa;font-size:0.8rem;padding:2rem;text-align:center">Sélectionnez une requête dans la liste</div>';
+    return;
+  }
+  const token = sessionStorage.getItem('sb_access_token') || SUPABASE_ANON_KEY;
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/maternelle_plans_marie?id=eq.${id}&select=plan_json,modele`,
+    { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${token}` } }
+  );
+  const data = await res.json();
+  histEtat.planActuel = data[0]?.plan_json || null;
+  histEtat.planId = id;
+  renderHistMarie();
+}
+
+async function supprimerPlanHistorique() {
+  if (!histEtat.planId) return;
+  if (!confirm('Supprimer cette requête Marie ?')) return;
+  const token = sessionStorage.getItem('sb_access_token') || SUPABASE_ANON_KEY;
+  await fetch(`${SUPABASE_URL}/rest/v1/maternelle_plans_marie?id=eq.${histEtat.planId}`, {
+    method: 'DELETE',
+    headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${token}`, Prefer: 'return=minimal' }
+  });
+  histEtat.planActuel = null;
+  histEtat.planId = null;
+  document.getElementById('hist-btn-supprimer').style.display = 'none';
+  document.getElementById('hist-marie-body').innerHTML = '<div style="color:#aaa;font-size:0.8rem;padding:2rem;text-align:center">Plan supprimé</div>';
+  await chargerListePlans();
+}
+
+function histNavSemaine(delta, panneau) {
+  if (panneau === 'cahier') {
+    histEtat.cahierIndex = Math.max(0, Math.min(semainesDePeriode.length - 1, histEtat.cahierIndex + delta));
+    renderHistCahier();
+  } else {
+    histEtat.marieIndex = Math.max(0, Math.min(semainesDePeriode.length - 1, histEtat.marieIndex + delta));
+    renderHistMarie();
+  }
+}
+
+function renderHistCahier() {
+  const sem = semainesDePeriode[histEtat.cahierIndex];
+  if (!sem) return;
+  document.getElementById('hist-cahier-label').textContent = `S${sem.numero_semaine}`;
+  const creneaux = (sem.creneaux || []).filter(c =>
+    c.moment === 'Ateliers rotation 1' || c.moment === 'Ateliers rotation 2'
+  );
+  const jours = ['mardi', 'jeudi', 'vendredi'];
+  let html = '';
+  for (const jour of jours) {
+    const cs = creneaux.filter(c => c.jour === jour);
+    if (!cs.length) continue;
+    const jourLabel = { mardi: 'Mardi', jeudi: 'Jeudi', vendredi: 'Vendredi' }[jour];
+    html += `<div style="font-size:0.7rem;font-weight:500;color:#888;padding:6px 0 3px;border-bottom:1px solid #e5e5e0;margin-bottom:6px">${jourLabel}</div>`;
+    for (const c of cs) {
+      const roleClass = { ENS: 'org-badge-ens', ATSEM: 'org-badge-atsem', AUTO: 'org-badge-auto' }[c.role] || 'org-badge-auto';
+      const nivClass = c.niveau === 'GS' ? 'org-badge-gs' : 'org-badge-ps';
+      html += `<div style="padding:6px 8px;border-radius:6px;border:1px solid #e5e5e0;background:${c.activite ? 'white' : '#fafaf8'};margin-bottom:4px">
+        <div style="display:flex;gap:4px;margin-bottom:3px">
+          <span class="org-badge ${roleClass}">${c.role || '—'}</span>
+          <span class="org-badge ${nivClass}">${c.niveau || '—'}</span>
+        </div>
+        <div style="font-size:0.72rem;${c.activite ? 'color:#1a1a1a;font-weight:500' : 'color:#aaa;font-style:italic'}">${c.activite || 'À remplir'}</div>
+      </div>`;
+    }
+  }
+  document.getElementById('hist-cahier-body').innerHTML = html || '<div style="color:#aaa;font-size:0.8rem;padding:1rem">Aucun créneau atelier</div>';
+}
+
+function renderHistMarie() {
+  const plan = histEtat.planActuel;
+  if (!plan?.semaines) {
+    document.getElementById('hist-marie-body').innerHTML = '<div style="color:#aaa;font-size:0.8rem;padding:2rem;text-align:center">Aucun plan disponible</div>';
+    return;
+  }
+  const semaine = plan.semaines[histEtat.marieIndex];
+  if (!semaine) {
+    document.getElementById('hist-marie-body').innerHTML = '<div style="color:#aaa;font-size:0.8rem;padding:2rem;text-align:center">Semaine non disponible dans ce plan</div>';
+    return;
+  }
+  document.getElementById('hist-marie-label').textContent = `S${semaine.numero || (histEtat.marieIndex + 1)}`;
+  let html = '';
+  for (const jour of (semaine.jours || [])) {
+    const jourLabel = { mardi: 'Mardi', jeudi: 'Jeudi', vendredi: 'Vendredi' }[jour.jour] || jour.jour;
+    html += `<div style="font-size:0.7rem;font-weight:500;color:#888;padding:6px 0 3px;border-bottom:1px solid #e5e5e0;margin-bottom:6px">${jourLabel}</div>`;
+    for (const c of (jour.creneaux || [])) {
+      const estVide = c.type === 'vide';
+      const roleClass = { ENS: 'org-badge-ens', ATSEM: 'org-badge-atsem', AUTO: 'org-badge-auto' }[c.role] || 'org-badge-auto';
+      const nivClass = c.niveau === 'GS' ? 'org-badge-gs' : 'org-badge-ps';
+      html += `<div style="padding:6px 8px;border-radius:6px;border:1px solid ${estVide ? '#e5e5e0' : '#E8730A'};background:${estVide ? '#fafaf8' : '#FDF0E3'};margin-bottom:4px;${estVide ? 'opacity:0.7' : ''}">
+        <div style="display:flex;gap:4px;margin-bottom:3px">
+          <span class="org-badge ${roleClass}">${c.role || '—'}</span>
+          <span class="org-badge ${nivClass}">${c.niveau || '—'}</span>
+        </div>
+        <div style="font-size:0.72rem;${estVide ? 'color:#aaa;font-style:italic' : 'color:#1a1a1a;font-weight:500'}">${c.proposition || 'Créneau vide'}</div>
+        ${c.justification ? `<div style="font-size:0.62rem;color:#856404;margin-top:2px">${c.justification}</div>` : ''}
+      </div>`;
+    }
+  }
+  document.getElementById('hist-marie-body').innerHTML = html || '<div style="color:#aaa;font-size:0.8rem;padding:1rem">Aucune donnée</div>';
+}
 // ── Initialisation principale ──
 async function chargerSemaine() {
   const params = new URLSearchParams(window.location.search);
@@ -2577,6 +2727,54 @@ function afficherTooltip(event, texte) {
 // =============================================
 chargerSemaine();
 </script>
+  <!-- SUPERPOSITION — Historique requêtes Marie -->
+<div class="organiser-fond" id="historique-fond">
+  <div class="organiser-boite">
+    <div class="org-header">
+      <div>
+        <div class="org-header-titre">🕘 Historique requêtes Marie</div>
+        <div class="org-header-sous" id="hist-sous-titre">Période 1 · Plans générés</div>
+      </div>
+      <button class="org-btn-annuler" onclick="fermerHistoriqueMarie()">✗ Fermer</button>
+    </div>
+    <div style="display:flex;flex:1;overflow:hidden">
+      <!-- Panneau gauche — Cahier journal -->
+      <div style="flex:1;display:flex;flex-direction:column;border-right:1px solid #e5e5e0;overflow:hidden">
+        <div style="padding:10px 14px;border-bottom:1px solid #e5e5e0;background:#fafaf8;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+          <div style="font-size:0.78rem;font-weight:500;color:#1a1a1a">📓 Cahier journal</div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <button class="nav-btn" onclick="histNavSemaine(-1,'cahier')">←</button>
+            <span style="font-size:0.75rem;font-weight:500;min-width:90px;text-align:center" id="hist-cahier-label">S1 — Rentrée</span>
+            <button class="nav-btn" onclick="histNavSemaine(1,'cahier')">→</button>
+          </div>
+        </div>
+        <div style="flex:1;overflow-y:auto;padding:10px 12px" id="hist-cahier-body">
+          <div style="color:#aaa;font-size:0.8rem;padding:2rem;text-align:center">Chargement…</div>
+        </div>
+      </div>
+      <!-- Panneau droit — Plan Marie -->
+      <div style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+        <div style="padding:10px 14px;border-bottom:1px solid #e5e5e0;background:#fafaf8;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;gap:8px">
+          <div style="font-size:0.78rem;font-weight:500;color:#1a1a1a">✨ Plan Marie</div>
+          <div style="display:flex;align-items:center;gap:6px;flex:1">
+            <select id="hist-select-plan" onchange="chargerPlanHistorique()" style="flex:1;font-size:0.72rem;padding:4px 8px;border:1px solid #ddd;border-radius:6px;background:white">
+              <option value="">— choisir une requête —</option>
+            </select>
+            <button id="hist-btn-supprimer" onclick="supprimerPlanHistorique()" style="padding:4px 8px;font-size:0.72rem;color:#c0392b;background:white;border:1px solid #f0c0c0;border-radius:6px;cursor:pointer;display:none">🗑</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <button class="nav-btn" onclick="histNavSemaine(-1,'marie')">←</button>
+            <span style="font-size:0.75rem;font-weight:500;min-width:90px;text-align:center" id="hist-marie-label">S1 — Rentrée</span>
+            <button class="nav-btn" onclick="histNavSemaine(1,'marie')">→</button>
+          </div>
+        </div>
+        <div style="flex:1;overflow-y:auto;padding:10px 12px" id="hist-marie-body">
+          <div style="color:#aaa;font-size:0.8rem;padding:2rem;text-align:center">Sélectionnez une requête dans la liste</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
   <!-- SUPERPOSITION — Choisir une séance atelier -->
 <div class="choisir-fond" id="choisir-fond">
   <div class="choisir-boite">

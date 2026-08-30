@@ -165,11 +165,10 @@ async function appelMarie(promptUser, tokensMax) {
 
 // ── Parse JSON Marie avec nettoyage markdown ──────────────────────────
 function parseMarieJson(texte) {
-    const clean = texte
-    .replace(/^\s*```(?:json)?\s*/i, '')
-    .replace(/\s*```\s*$/i, '')
-    .trim();
-  return JSON.parse(clean);
+  const start = texte.indexOf('{');
+  const end = texte.lastIndexOf('}');
+  if (start === -1 || end === -1) throw new Error('Aucun JSON trouvé');
+  return JSON.parse(texte.slice(start, end + 1));
 }
 
 // ── Construit le prompt pour un bloc de semaines ──────────────────────

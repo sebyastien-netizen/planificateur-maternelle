@@ -1361,7 +1361,7 @@ function ouvrirMenuContextuel(event, creneauId, jour, moment, niveau, heureDeb, 
     e.stopPropagation();
     fermerMenuContextuel();
     if (moment === 'Ateliers rotation 1' || moment === 'Ateliers rotation 2') {
-      ouvrirChoisirSeance(creneauId, etatApp.menuRole || niveau, niveau, jour);
+     ouvrirChoisirSeance(creneauId, etatApp.menuRole || etatApp.menuNiveau, etatApp.menuNiveau, etatApp.menuJour);
     } else {
       ouvrirTiroirSelection('ajouter', jour, moment, null, heureDeb, heureFin);
     }

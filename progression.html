@@ -97,13 +97,17 @@ async function charger() {
 if (!token) { window.location.href = 'index.html'; return; }
   const h = { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${token}` };
 
-  const [reglesRes, creneauxRes] = await Promise.all([
+const [reglesRes, creneauxRes, sequencesRes] = await Promise.all([
     fetch(`${SUPABASE_URL}/rest/v1/maternelle_regles?exclu_marie=eq.false&select=id,source,niveau,sequence_id,ordre_sequence,description,type_dispositif&order=source.asc,ordre_sequence.asc`, { headers: h }),
-    fetch(`${SUPABASE_URL}/rest/v1/maternelle_creneaux?regle_id=not.is.null&select=regle_id,statut,statut_planification`, { headers: h })
+    fetch(`${SUPABASE_URL}/rest/v1/maternelle_creneaux?regle_id=not.is.null&select=regle_id,statut,statut_planification`, { headers: h }),
+    fetch(`${SUPABASE_URL}/rest/v1/maternelle_sequences?select=id,titre&order=ordre.asc`, { headers: h })
   ]);
 
   toutesRegles = await reglesRes.json();
   const creneaux = await creneauxRes.json();
+  const sequences = await sequencesRes.json();
+  window.sequencesMap = {};
+  for (const s of sequences) window.sequencesMap[s.id] = s.titre;
 
   for (const c of creneaux) {
     if (!c.regle_id) continue;
@@ -143,7 +147,7 @@ function render() {
 
     for (const seqId of sequences) {
       const seqRegles = reglesSrc.filter(r => r.sequence_id === seqId);
-      const seqLabel = seqId ? seqId.replace(/-/g, ' ').replace(/p\d+/i, '').replace(/seq\s*\d+/i, '').trim() : '—';
+      const seqLabel = window.sequencesMap?.[seqId] || seqId || '—';
       bodyHtml += `<div class="seq-label">${seqLabel}</div>`;
 
       for (const r of seqRegles) {

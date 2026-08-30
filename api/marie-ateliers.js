@@ -56,10 +56,10 @@ Règles de format absolues :
 ## BLOC 2 — STRUCTURE D'UN JOUR (non négociable)
 
 Chaque jour contient EXACTEMENT 4 créneaux distincts, dans cet ordre :
-1. ENS GS → séance type_dispositif="dirigé", niveau="GS"
-2. ATSEM PS → séance type_dispositif="semi-dirigé", niveau="PS"
-3. AUTO GS → séance type_dispositif="autonome", niveau="GS"
-4. AUTO PS → séance type_dispositif="autonome", niveau="PS"
+1. ENS GS -> séance type_dispositif="dirigé", niveau="GS"
+2. ATSEM PS -> séance type_dispositif="semi-dirigé", niveau="PS"
+3. AUTO GS -> séance type_dispositif="autonome", niveau="GS"
+4. AUTO PS -> séance type_dispositif="autonome", niveau="PS"
 
 Ne jamais répéter le même rôle+niveau. Ne jamais croiser les niveaux.
 
@@ -67,24 +67,24 @@ Ne jamais répéter le même rôle+niveau. Ne jamais croiser les niveaux.
 
 Pour chaque créneau vide, raisonne dans cet ordre :
 
-1. FILTRE : dans prochaines_regles, ne retiens que les règles avec le bon niveau ET le bon type_dispositif
-2. PRIORITÉ : séances en_attente > repoussées ≥3 fois > prochaine dans l'ordre de la séquence
-3. ÉQUILIBRE : évite de surcharger une méthode sur la semaine — alterne si possible (R29)
+1. FILTRE : dans SÉANCES DISPONIBLES, ne retiens que les séances avec le bon niveau ET le bon type_dispositif
+2. PRIORITÉ : séances en_attente > repoussées 3 fois ou plus > prochaine dans l'ordre de la séquence
+3. ÉQUILIBRE : évite de surcharger une méthode sur la semaine — alterne si possible
 4. VALIDATION : vérifie les règles fixes ci-dessous
-5. PLACE ou DÉCLARE VIDE : si aucune séance valide → type="vide" avec justification explicite
+5. PLACE ou DÉCLARE VIDE : si aucune séance valide -> type="vide" avec justification explicite
 
-## BLOC 4 — RÈGLES FIXES (violations = type="conflit")
+## BLOC 4 — RÈGLES FIXES
 
 - R1-R2 : ordre strict dans la séquence — jamais de saut, jamais de retour en arrière
 - R5-R7 : cohérence rôle/dispositif — ENS=dirigé, ATSEM=semi-dirigé, AUTO=autonome
-- R8-R9 : cohérence niveau — GS→GS uniquement, PS→PS uniquement
+- R8-R9 : cohérence niveau — GS vers GS uniquement, PS vers PS uniquement
 - R21 : badge SUITE — vérifier que le prérequis est statut="fait" avant de placer
-- R25 : créneau avec regle_id_actuel != null = déjà occupé → ne pas inclure dans la réponse
-- R26 : une seule séance par créneau, jamais deux
+- R25 : créneau déjà occupé (regle_id_actuel non null) -> ne pas inclure dans la réponse
+- R26 : une seule séance par créneau
 
 Cas spéciaux semaine S1 (numero=1) :
-- R15 : PS → méthode "ACCÈS Autour des livres TPS-PS" uniquement
-- R16 : GS → créneau ENS GS obligatoirement type="vide"
+- R15 : PS -> méthode "ACCÈS Autour des livres TPS-PS" uniquement
+- R16 : GS -> créneau ENS GS obligatoirement type="vide"
 
 Cas spécial semaine S6 (numero=6) :
 - R17 : éviter de commencer une nouvelle séquence qu'on ne pourrait pas terminer
@@ -93,21 +93,21 @@ Cas spécial semaine S6 (numero=6) :
 
 - R29 : équilibre des méthodes sur la semaine — ne pas surcharger une méthode
 - R30 : équilibre GS/PS — si les GS ont nettement plus de séances, comble les PS en priorité
-- R31 : badge À_RÉITÉRER → planifier deux fois avant de passer à la suivante
-- R32 : badge SI_TEMPS → uniquement si tous les créneaux obligatoires sont remplis
+- R31 : badge A_REITERER -> planifier deux fois avant de passer à la suivante
+- R32 : badge SI_TEMPS -> uniquement si tous les créneaux obligatoires sont remplis
 - R34 : justification parmi : "Prochaine dans l'ordre de la séquence" / "Repoussée depuis S[N]" / "Prérequis de la séance suivante" / "Dernier créneau disponible avant S7" / "Lien inter-méthodes — delta atteint"
 
-## BLOC 6 — LIENS INTER-MÉTHODES (si liens_inter_methodes non vide)
+## BLOC 6 — LIENS INTER-MÉTHODES (si présents)
 
 - La séance cible est débloquée quand position_source_actuelle >= position_cible + delta_positions
-- Si ce seuil est atteint → propose la séance cible, justification = "Lien inter-méthodes — delta atteint"
-- Si l'écart réel dépasse le delta attendu → type="conflit", severite="avertissement", signale la divergence
+- Si ce seuil est atteint -> propose la séance cible, justification = "Lien inter-méthodes — delta atteint"
+- Si l'écart réel dépasse le delta attendu -> type="conflit", severite="avertissement"
 
 ## BLOC 7 — PROGRESSION INTER-SEMAINES
 
-- Ne jamais proposer la même séance deux jours différents dans la même semaine (R35)
-- Si la séance N est placée mardi → propose N+1 jeudi → N+2 vendredi
-- La progression reçue indique la dernière séance faite par méthode/niveau — repars de là`;
+- Ne jamais proposer la même séance deux jours différents dans la même semaine
+- Si la séance N est placée mardi -> propose N+1 jeudi -> N+2 vendredi
+- La PROGRESSION ACTUELLE indique la dernière séance faite par méthode/niveau — repars de là`;
 
 // ── Fonction appel API Marie (Anthropic ou OpenAI) ────────────────────
 async function appelMarie(promptUser, tokensMax) {
@@ -169,106 +169,65 @@ function parseMarieJson(texte) {
   return JSON.parse(clean);
 }
 
-// ── Construit le rappel de règles + contexte pour un bloc de semaines ─
+// ── Construit le prompt pour un bloc de semaines ──────────────────────
 function buildPrompt(periode, semainesBloc, creneauxAteliers, progression, prochainesRegles, liensInterMethodes, label) {
-  const contexte = {
-    periode: {
-      numero: periode.numero,
-      date_debut: periode.date_debut,
-      date_fin: periode.date_fin
-    },
-    semaines: semainesBloc.map(s => {
-      const jours = [];
-      if (s.a_mardi) jours.push('mardi');
-      jours.push('jeudi', 'vendredi');
 
-      // R1 uniquement — R2 identique, l'enseignante le remplit elle-même
-      const creneauxSemaine = creneauxAteliers
-        .filter(c => c.semaine_id === s.id && c.moment === 'Ateliers rotation 1')
-        .map(c => ({
-          creneau_id: c.id,
-          jour: c.jour,
-          rotation: 'R1',
-          role: c.role,
-          niveau: c.niveau,
-          regle_id_actuel: c.regle_id || null,
-          activite_actuelle: c.activite || null,
-          statut: c.statut,
-          statut_planification: c.statut_planification
-        }));
+  const lignesCreneaux = [];
+  for (const s of semainesBloc) {
+    const jours = [];
+    if (s.a_mardi) jours.push('mardi');
+    jours.push('jeudi', 'vendredi');
 
-      return {
-        semaine_id: s.id,
-        numero: s.numero_semaine,
-        date_lundi: s.date_lundi,
-        a_mardi: s.a_mardi,
-        jours,
-        creneaux_ateliers: creneauxSemaine
-      };
-    }),
-    progression,
-    prochaines_regles: prochainesRegles,
-    liens_inter_methodes: liensInterMethodes
-  };
+    const creneauxSemaine = creneauxAteliers
+      .filter(c => c.semaine_id === s.id && c.moment === 'Ateliers rotation 1')
+      .map(c => ({
+        creneau_id: c.id,
+        jour: c.jour,
+        role: c.role,
+        niveau: c.niveau,
+        regle_id_actuel: c.regle_id || null,
+        activite_actuelle: c.activite || null
+      }));
 
-  return `
-RAPPEL IMPÉRATIF — vérifie chaque point avant d'écrire ta réponse :
+    const creneauxVides = creneauxSemaine.filter(c => !c.regle_id_actuel && !c.activite_actuelle);
 
-1. COHÉRENCE DISPOSITIF (non-négociable) :
-   - role=ENS → UNIQUEMENT type_dispositif='dirigé'
-   - role=ATSEM → UNIQUEMENT type_dispositif='semi-dirigé'
-   - role=AUTO → UNIQUEMENT type_dispositif='autonome'
-   Violation = erreur critique.
+    lignesCreneaux.push(`S${s.numero_semaine} — lundi ${s.date_lundi} — jours : ${jours.join(', ')}`);
+    if (creneauxVides.length === 0) {
+      lignesCreneaux.push('  (tous les créneaux sont déjà remplis)');
+    } else {
+      for (const c of creneauxVides) {
+        lignesCreneaux.push(`  - creneau_id=${c.creneau_id} | jour=${c.jour} | role=${c.role} | niveau=${c.niveau}`);
+      }
+    }
+  }
 
-2. COHÉRENCE NIVEAU (non-négociable) :
-   - niveau=GS → UNIQUEMENT séances de niveau GS
-   - niveau=PS → UNIQUEMENT séances de niveau PS
+  const lignesProgression = progression.length
+    ? progression.map(p => `  - ${p.source} ${p.niveau} : dernière séance ordre ${p.ordre_sequence} — ${p.statut_derniere}`)
+    : ['  Aucune séance faite — début de période'];
 
-3. SEMAINE S1 — RÈGLES ABSOLUES :
-   - PS : UNIQUEMENT la méthode 'ACCÈS Autour des livres TPS-PS' en S1. Aucune autre méthode PS.
-   - GS : UNIQUEMENT des séances de type_dispositif='autonome' en S1. Le créneau ENS GS doit être type="vide" en S1.
+  const lignesSeances = prochainesRegles.map(r =>
+    `  - [${r.regle_id}] ${r.source} | ${r.niveau} | ${r.type_dispositif} | ordre ${r.ordre_sequence} : ${r.description}`
+  );
 
-4. S7 : jamais de proposition sur la semaine numéro 7.
+  const lignesLiens = liensInterMethodes.length
+    ? liensInterMethodes.map(l => `  - ${l.regle_source_id} -> ${l.regle_cible_id} (delta ${l.delta_positions}) : ${l.note}`)
+    : ['  Aucun lien inter-méthodes'];
 
-5. VÉRIFICATION PAR CRÉNEAU : pour chaque proposition, vérifie dans prochaines_regles que la regle_id a bien le bon niveau ET le bon type_dispositif. Si aucune séance du bon type n'est disponible → type="vide".
+  return `Tu dois planifier les créneaux ateliers pour les semaines ${label} de la Période ${periode.numero} (${periode.date_debut} -> ${periode.date_fin}).
 
-6. STRUCTURE PAR JOUR — exactement 4 créneaux distincts :
-   - 1 × ENS GS (dirigé, GS)
-   - 1 × ATSEM PS (semi-dirigé, PS)
-   - 1 × AUTO GS (autonome, GS)
-   - 1 × AUTO PS (autonome, PS)
-   Ne jamais répéter le même rôle+niveau deux fois dans la même journée.
-
-7. JOURS OBLIGATOIRES : produis une entrée pour CHAQUE jour listé dans "jours" de chaque semaine. Si jours=["mardi","jeudi","vendredi"], ta réponse doit avoir 3 objets dans "jours". Ne jamais omettre un jour.
-
-8. PROGRESSION HEBDOMADAIRE CONTINUE : sur une même semaine, ne jamais proposer deux fois la même séance sur deux jours différents. Chaque jour doit faire avancer la progression dans la méthode — si la séance N est placée le mardi, propose la séance N+1 le jeudi, puis N+2 le vendredi (si le dispositif et le niveau le permettent). Ne jamais stationner sur la même séance plusieurs jours d'affilée.
-
-9. TYPE VIDE : si aucune séance disponible ou mauvais type_dispositif → utilise type="vide" avec proposition=null et regle_id=null. Ne jamais mettre type="proposition" avec proposition=null ou "—". Un créneau sans séance valide est toujours type="vide" avec une justification claire. En S1 spécifiquement, le créneau AUTO PS doit être type="vide" car les séances autonomes PS d'Autour des livres n'apparaissent qu'en milieu de séquence.
-
-10. CRÉNEAUX DÉJÀ REMPLIS : un créneau avec regle_id_actuel != null OU activite_actuelle != null est déjà occupé. Tu ne proposes RIEN dessus. Ne l'inclus pas dans ta réponse du tout — saute-le. Si la séance déjà placée viole une règle → inclus-le avec type="conflit" uniquement. Ne jamais écraser une séance déjà placée manuellement par l'enseignante.
-
-11. UNICITÉ DES CRENEAU_ID : chaque creneau_id dans ta réponse doit être unique sur l'ensemble du plan. Ne jamais réutiliser le même creneau_id dans deux jours ou deux semaines différentes.
-
-12. BLOC TRAITÉ : tu traites UNIQUEMENT les semaines ${label}. Ne produis des entrées que pour ces semaines.
-
-Voici les données à analyser :
-
-PÉRIODE : P${contexte.periode.numero} (${contexte.periode.date_debut} → ${contexte.periode.date_fin})
-
-SEMAINES À TRAITER :
-${contexte.semaines.map(s => `
-S${s.numero} (lundi ${s.date_lundi}) — jours : ${s.jours.join(', ')}
-Créneaux vides à remplir :
-${s.creneaux_ateliers.filter(c => !c.regle_id_actuel && !c.activite_actuelle).map(c => `  - ${c.creneau_id} | ${c.jour} | ${c.role} ${c.niveau} | ${c.rotation}`).join('\n')}
-`).join('\n')}
+CRÉNEAUX À REMPLIR :
+${lignesCreneaux.join('\n')}
 
 PROGRESSION ACTUELLE (dernière séance faite par méthode) :
-${contexte.progression.length ? contexte.progression.map(p => `  - ${p.source} ${p.niveau} : séance ordre ${p.ordre_sequence} (${p.statut_derniere})`).join('\n') : '  Aucune séance faite — début de période'}
+${lignesProgression.join('\n')}
 
-SÉANCES DISPONIBLES PAR CRÉNEAU :
-${contexte.prochaines_regles.map(r => `  - [${r.regle_id}] ${r.source} | ${r.niveau} | ${r.type_dispositif} | ordre ${r.ordre_sequence} : ${r.description}`).join('\n')}
+SÉANCES DISPONIBLES :
+${lignesSeances.join('\n')}
 
-${contexte.liens_inter_methodes.length ? `LIENS INTER-MÉTHODES :\n${contexte.liens_inter_methodes.map(l => `  - ${l.regle_source_id} → ${l.regle_cible_id} (delta ${l.delta_positions}) : ${l.note}`).join('\n')}` : ''}`;
+LIENS INTER-MÉTHODES :
+${lignesLiens.join('\n')}
+
+Produis le JSON de planification pour ces semaines uniquement. Chaque semaine doit apparaître dans ta réponse même si tous ses créneaux sont vides (utilise type="vide" dans ce cas).`;
 }
 
 // ── Mise à jour de la progression après un plan partiel ──────────────
@@ -279,7 +238,6 @@ function mettreAJourProgression(planPartiel, progression, prochainesRegles, regl
         if (c.type !== 'proposition' || !c.regle_id) continue;
         const regle = regles.find(r => r.id === c.regle_id);
         if (!regle) continue;
-        const key = `${regle.source}__${regle.niveau}`;
         const existant = progression.find(p => p.source === regle.source && p.niveau === regle.niveau);
         if (!existant) {
           progression.push({
@@ -299,15 +257,13 @@ function mettreAJourProgression(planPartiel, progression, prochainesRegles, regl
           existant.ordre_sequence = regle.ordre_sequence;
           existant.description = regle.description;
         }
-
-        // Retirer la règle posée des prochaines_regles et avancer la fenêtre
         const idx = prochainesRegles.findIndex(r => r.regle_id === c.regle_id);
         if (idx !== -1) prochainesRegles.splice(idx, 1);
       }
     }
   }
 
-  // Recompléter prochaines_regles jusqu'à 5 par source+niveau
+  // Recompléter prochaines_regles jusqu'à 5 par source+niveau avec diversité de dispositifs
   const sourceNiveaux = [...new Set(regles.map(r => `${r.source}__${r.niveau}`))];
   for (const key of sourceNiveaux) {
     const [source, niveau] = key.split('__');
@@ -316,10 +272,18 @@ function mettreAJourProgression(planPartiel, progression, prochainesRegles, regl
     const dejaDans = prochainesRegles.filter(r => r.source === source && r.niveau === niveau).length;
     const manquantes = 5 - dejaDans;
     if (manquantes <= 0) continue;
-    const aAjouter = regles
+    const disponibles = regles
       .filter(r => r.source === source && r.niveau === niveau && r.ordre_sequence > ordreMin)
-      .filter(r => !prochainesRegles.find(pr => pr.regle_id === r.id))
-      .slice(0, manquantes);
+      .filter(r => !prochainesRegles.find(pr => pr.regle_id === r.id));
+    const aAjouter = [];
+    for (const disp of ['dirigé', 'semi-dirigé', 'autonome']) {
+      const r = disponibles.find(r => r.type_dispositif === disp && !aAjouter.includes(r));
+      if (r) aAjouter.push(r);
+    }
+    for (const r of disponibles) {
+      if (aAjouter.length >= manquantes) break;
+      if (!aAjouter.includes(r)) aAjouter.push(r);
+    }
     for (const r of aAjouter) {
       prochainesRegles.push({
         regle_id: r.id,
@@ -363,7 +327,7 @@ module.exports = async function handler(req, res) {
     if (!periodes.length) return res.status(404).json({ error: 'Période introuvable' });
     const periode = periodes[0];
 
-    // ── 2. SEMAINES S1→S6 (S7 exclue) ───────────────────────────────────
+    // ── 2. SEMAINES S1->S6 (S7 exclue) ───────────────────────────────────
     const semaines = await sbGet(
       `maternelle_semaines?periode_id=eq.${periode_id}&numero_semaine=lt.7&select=id,numero_semaine,date_lundi,a_mardi&order=numero_semaine.asc`
     );
@@ -423,28 +387,23 @@ module.exports = async function handler(req, res) {
       badges: r.est_introduction ? ['INTRODUCTION'] : []
     }));
 
-    // ── 5. PROCHAINES RÈGLES — fenêtre de 5 par source+niveau ────────────
+    // ── 5. PROCHAINES RÈGLES — fenêtre avec diversité de dispositifs ─────
     const prochainesRegles = [];
     const sourceNiveaux = [...new Set(regles.map(r => `${r.source}__${r.niveau}`))];
     for (const key of sourceNiveaux) {
       const [source, niveau] = key.split('__');
       const derniere = progressionMap[key];
       const ordreMin = derniere ? derniere.ordre_sequence : 0;
-const toutesLesRegles = regles
-  .filter(r => r.source === source && r.niveau === niveau && r.ordre_sequence > ordreMin);
-
-// Au moins 1 par type_dispositif, jusqu'à 5 au total
-const dispositifs = ['dirigé', 'semi-dirigé', 'autonome'];
-const suivantes = [];
-for (const disp of dispositifs) {
-  const premiere = toutesLesRegles.find(r => r.type_dispositif === disp && !suivantes.includes(r));
-  if (premiere) suivantes.push(premiere);
-}
-// Compléter jusqu'à 5 avec les suivantes dans l'ordre
-for (const r of toutesLesRegles) {
-  if (suivantes.length >= 5) break;
-  if (!suivantes.includes(r)) suivantes.push(r);
-}
+      const toutes = regles.filter(r => r.source === source && r.niveau === niveau && r.ordre_sequence > ordreMin);
+      const suivantes = [];
+      for (const disp of ['dirigé', 'semi-dirigé', 'autonome']) {
+        const r = toutes.find(r => r.type_dispositif === disp);
+        if (r) suivantes.push(r);
+      }
+      for (const r of toutes) {
+        if (suivantes.length >= 5) break;
+        if (!suivantes.includes(r)) suivantes.push(r);
+      }
       for (const r of suivantes) {
         prochainesRegles.push({
           regle_id: r.id,
@@ -477,13 +436,6 @@ for (const r of toutesLesRegles) {
     // ── 8. APPEL 1 — S1-S2-S3 ────────────────────────────────────────────
     const prompt1 = buildPrompt(periode, bloc1, creneauxAteliers, progression, prochainesRegles, liensInterMethodes, 'S1, S2 et S3');
     const { texte: texte1, tokensInput: ti1, tokensOutput: to1 } = await appelMarie(prompt1, 8000);
-    return res.status(200).json({ _debug: true, prompt1_complet: prompt1 });
-  return res.status(200).json({ 
-    _debug: true, 
-    texte1_raw: texte1,
-    prompt1_fin: prompt1.slice(-500)
-  });
-}
 
     let plan1;
     try {

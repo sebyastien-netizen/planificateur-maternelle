@@ -456,7 +456,7 @@ console.log('MARIE RAW RESPONSE:', texte.slice(0, 1000));
     });
 
     // ── 11. RETOUR ────────────────────────────────────────────────────────
-    return res.status(200).json({ ok: true, plan });
+        return res.status(200).json({ ok: true, plan, _debug_raw: texte.slice(0, 2000) });
 
   } catch (err) {
     console.error('api/marie-ateliers.js error:', err);

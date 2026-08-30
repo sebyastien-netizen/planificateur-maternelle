@@ -15,6 +15,16 @@
     .btn-retour { font-size: 0.85rem; color: #2d6a4f; text-decoration: none; border: 1px solid #2d6a4f; padding: 6px 14px; border-radius: 8px; }
     .btn-rituels { font-size: 0.85rem; color: #6b4fa0; background: #f0ecf8; border: 1px solid #c4b0e0; padding: 6px 14px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 6px; }
     .btn-rituels:hover { background: #e4d9f5; }
+    .btn-outils { position: relative; }
+.btn-outils-trigger { font-size: 0.85rem; color: #555; background: #f5f5f0; border: 1px solid #ddd; padding: 6px 14px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+.btn-outils-trigger:hover { background: #ebebeb; }
+.btn-outils-menu { display: none; position: absolute; top: calc(100% + 6px); right: 0; background: white; border: 1px solid #e5e5e0; border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); min-width: 220px; z-index: 200; overflow: hidden; }
+.btn-outils-menu.ouvert { display: block; }
+.btn-outils-item { display: flex; align-items: center; gap: 10px; padding: 10px 16px; font-size: 0.82rem; color: #333; cursor: pointer; border-bottom: 1px solid #f0f0ee; }
+.btn-outils-item:last-child { border-bottom: none; }
+.btn-outils-item:hover { background: #f5f5f0; }
+.btn-outils-item.desactive { color: #ccc; cursor: default; }
+.btn-outils-item.desactive:hover { background: white; }
 .btn-bilan { font-size: 0.85rem; color: #c85a0a; background: #fff3cd; border: 1px solid #fcd34d; padding: 6px 14px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 6px; }
 .btn-bilan:hover { background: #fef3c7; }
 
@@ -628,7 +638,14 @@
   <div class="header-actions">
     <button class="btn-rituels" onclick="ouvrirTiroir()">📋 Rituels de la semaine</button>
 <button class="btn-organiser" id="btn-organiser">✨ Organiser mes créneaux</button>
-<button class="btn-historique" id="btn-historique">🕘 Historique requêtes Marie</button>
+<div class="btn-outils" id="btn-outils">
+  <button class="btn-outils-trigger" onclick="toggleMenuOutils()">⚙ Outils ▾</button>
+  <div class="btn-outils-menu" id="outils-menu">
+    <div class="btn-outils-item" onclick="ouvrirProgression()">📊 Progression des méthodes</div>
+    <div class="btn-outils-item" onclick="toggleHistorique(); toggleMenuOutils()">🕘 Historique requêtes Marie</div>
+    <div class="btn-outils-item desactive">🔄 Réinitialiser les ateliers</div>
+  </div>
+</div>
     <a href="accueil.html" class="btn-retour">← Retour</a>
   </div>
 </div>
@@ -949,6 +966,23 @@ async function changerPeriode() {
 function naviguerSemaine(delta) {
   allerASemaine(indexSemaineActive + delta);
 }
+
+  // =============================================
+// MENU OUTILS
+// =============================================
+function toggleMenuOutils() {
+  document.getElementById('outils-menu').classList.toggle('ouvert');
+}
+function ouvrirProgression() {
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get('id');
+  window.location.href = `progression.html?id=${id}`;
+}
+document.addEventListener('click', (e) => {
+  if (!document.getElementById('btn-outils')?.contains(e.target)) {
+    document.getElementById('outils-menu')?.classList.remove('ouvert');
+  }
+});
 // =============================================
 // HISTORIQUE REQUÊTES MARIE
 // =============================================

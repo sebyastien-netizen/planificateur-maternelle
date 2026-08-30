@@ -460,7 +460,6 @@ for (const r of toutesLesRegles) {
 
     // ── 8. APPEL 1 — S1-S2-S3 ────────────────────────────────────────────
     const prompt1 = buildPrompt(periode, bloc1, creneauxAteliers, progression, prochainesRegles, liensInterMethodes, 'S1, S2 et S3');
-    return res.status(200).json({ _debug: true, prompt1_length: prompt1.length, prompt1_sample: prompt1.slice(-2000) });
 
     let plan1;
     try {

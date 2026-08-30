@@ -508,7 +508,14 @@ module.exports = async function handler(req, res) {
     // ── 7. DÉCOUPAGE EN 2 BLOCS ───────────────────────────────────────────
     const bloc1 = semaines.filter(s => s.numero_semaine <= 3); // S1-S2-S3
     const bloc2 = semaines.filter(s => s.numero_semaine >= 4); // S4-S5-S6
-
+    
+return res.status(200).json({ 
+  _debug: true,
+  creneaux_r1_count: creneauxAteliers.length,
+  creneaux_r1_sample: creneauxAteliers.slice(0, 3),
+  bloc1_semaines: bloc1.map(s => s.numero_semaine),
+  prochaines_regles_count: prochainesRegles.length
+});
     // ── 8. APPEL 1 — S1-S2-S3 ────────────────────────────────────────────
     const prompt1 = buildPrompt(periode, bloc1, creneauxAteliers, progression, prochainesRegles, liensInterMethodes, 'S1, S2 et S3');
     const { texte: texte1, tokensInput: ti1, tokensOutput: to1 } = await appelMarie(prompt1, 8000);

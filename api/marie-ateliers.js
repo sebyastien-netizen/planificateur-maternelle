@@ -165,7 +165,10 @@ async function appelMarie(promptUser, tokensMax) {
 
 // ── Parse JSON Marie avec nettoyage markdown ──────────────────────────
 function parseMarieJson(texte) {
-  const clean = texte.replace(/^\s*```json\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+    const clean = texte
+    .replace(/^\s*```(?:json)?\s*/i, '')
+    .replace(/\s*```\s*$/i, '')
+    .trim();
   return JSON.parse(clean);
 }
 
@@ -191,7 +194,7 @@ function buildPrompt(periode, semainesBloc, creneauxAteliers, progression, proch
 
     const creneauxVides = creneauxSemaine.filter(c => !c.regle_id_actuel && !c.activite_actuelle);
 
-    lignesCreneaux.push(`S${s.numero_semaine} — lundi ${s.date_lundi} — jours : ${jours.join(', ')}`);
+        lignesCreneaux.push(`S${s.numero_semaine} — semaine_id=${s.id} — lundi ${s.date_lundi} — jours : ${jours.join(', ')}`);
     if (creneauxVides.length === 0) {
       lignesCreneaux.push('  (tous les créneaux sont déjà remplis)');
     } else {
